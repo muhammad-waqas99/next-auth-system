@@ -51,6 +51,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+
+    if(!user.isVerified){
+      return NextResponse.json({
+  "success": false,
+  "message": "Please verify your email before logging in"
+},{status:403})
+    }
+
     
     const tokenData ={
         id:user._id.toString(),

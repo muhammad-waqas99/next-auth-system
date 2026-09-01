@@ -33,7 +33,7 @@ export default function Login() {
   
       console.log(response.data);
   
-      router.push("/");
+      router.push("/profile");
     } catch (error) {
       console.log("Something went wrong");
     }
