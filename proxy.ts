@@ -62,5 +62,6 @@ matcher: [
   "/profile",
   "/verify-email",
   "/verify-email-sent",
+  "/change-password"
 ]
 }

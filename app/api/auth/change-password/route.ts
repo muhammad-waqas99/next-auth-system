@@ -10,7 +10,7 @@ interface TokenPayload {
 }
 
 interface ChangePasswordBody {
-  oldPassword: string;
+  currentpassword: string;
   newPassword: string;
   confirmPassword: string;
 }
@@ -19,9 +19,9 @@ export async function POST(request: NextRequest) {
   try {
     const reqBody: ChangePasswordBody = await request.json();
 
-    const { oldPassword, newPassword, confirmPassword } = reqBody;
+    const { currentpassword, newPassword, confirmPassword } = reqBody;
 
-    if (!oldPassword || !newPassword || !confirmPassword) {
+    if (!currentpassword || !newPassword || !confirmPassword) {
       return NextResponse.json(
         {
           success: false,
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     const checkPassword = await bcrypt.compare(
-      oldPassword,
+      currentpassword,
       user.password
     );
 

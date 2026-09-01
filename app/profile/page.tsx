@@ -1,6 +1,7 @@
 "use client";
 
 import axios from "axios";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -60,6 +61,13 @@ export default function Profile() {
           )}
         </div>
 
+                <Link href={"/change-password"}
+                  
+        
+          className="rounded-lg bg-green-500 my-2 px-5 py-2 font-semibold transition hover:bg-green-600">
+          Change Password
+        </Link>
+
         <button
           onClick={onLogout}
           type="button"
@@ -67,6 +75,7 @@ export default function Profile() {
         >
           Logout
         </button>
+
       </nav>
 
       <main className="flex min-h-[80vh] items-center justify-center">
