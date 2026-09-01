@@ -9,6 +9,7 @@ interface IUser {
   forgetPasswordTokenExpiry?: Date;
   verificationToken?: string;
   verificationTokenExpiry?: Date;
+  isVerified:boolean;
 }
 
 
@@ -27,6 +28,10 @@ const userSchema = new mongoose.Schema<IUser>({
   password: {
     type: String,
     required: true,
+  },
+  isVerified:{
+    type:Boolean,
+    default:false
   },
 
   forgetPasswordToken: {

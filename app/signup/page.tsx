@@ -35,7 +35,7 @@ const onSignup = async (e: React.SyntheticEvent<HTMLFormElement>) => {
 
     console.log(response.data);
 
-    router.push("/login");
+    router.push(`/verify-email-sent?email=${user.email}`);
   } catch (error) {
     console.log("Something went wrong");
   }
