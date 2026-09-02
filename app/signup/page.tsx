@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signupSchema } from "../lib/validationSchema/auth.schema";
+import toast from "react-hot-toast";
 
 
 
@@ -64,10 +65,15 @@ const onSignup = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     const response = await axios.post("/api/auth/signup", user);
      
     console.log(response.data);
+    toast.success(response.data.message);
 
     router.push(`/verify-email-sent?email=${user.email}`);
-  } catch (error) {
+  } catch (error:any) {
     console.log("Something went wrong");
+    toast.error(
+  error.response?.data?.message ||
+    "Something went wrong"
+);
   }
 };
 

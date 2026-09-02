@@ -3,6 +3,7 @@
 import axios from "axios";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 type VerificationStatus = "loading" | "success" | "error";
 
@@ -26,23 +27,29 @@ export default function VerifyEmail() {
         const response = await axios.post("/api/auth/verify-email", {
           token,
         });
-
+           
         if (response.data.success) {
           setStatus("success");
           setMessage("Email verified successfully!");
+          toast.success(response.data.message);
         } else {
           setStatus("error");
           setMessage(
             response.data.message || "Email verification failed."
           );
         }
-      } catch (error) {
+      } catch (error:any) {
+        toast.error(
+  error.response?.data?.message ||
+    "Something went wrong"
+);
         if (axios.isAxiosError(error)) {
           setStatus("error");
           setMessage(
             error.response?.data?.message ||
               "Invalid or expired verification link."
           );
+
         } else {
           setStatus("error");
           setMessage("Something went wrong.");

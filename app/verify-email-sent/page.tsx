@@ -45,6 +45,7 @@ export default function VerifyEmailSent() {
             "Your email is not verified yet. Please check your inbox and click the verification link."
           );
         }
+        
       } catch (error: any) {
         setStatus("error");
         setMessage(

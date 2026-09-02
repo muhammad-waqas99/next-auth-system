@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { resetPasswordSchema } from "../lib/validationSchema/auth.schema";
+import toast from "react-hot-toast";
 
 type ResetStatus =
   | "idle"
@@ -73,7 +74,7 @@ export default function ResetPassword() {
         }
       );
 
-      console.log(response.data);
+      toast.success(response.data.message);
 
       setStatus("success");
 
@@ -82,7 +83,10 @@ export default function ResetPassword() {
         "Something Went Wrong!",
         error.message
       );
-
+    toast.error(
+  error.response?.data?.message ||
+    "Something went wrong"
+);
       setErrorMessage(
         error.response?.data?.message ||
           "Something went wrong"

@@ -5,6 +5,7 @@
   import { useRouter } from "next/navigation";
   import { useState } from "react";
   import { loginSchema } from "../lib/validationSchema/auth.schema";
+import toast from "react-hot-toast";
   interface LoginForm {
     email: string;
     password: string;
@@ -49,10 +50,14 @@
         const response = await axios.post("/api/auth/login", user);
     
         console.log(response.data);
-    
+    toast.success(response.data.message);
         router.push("/profile");
-      } catch (error) {
+      } catch (error:any) {
         console.log("Something went wrong");
+        toast.error(
+  error.response?.data?.message ||
+    "Something went wrong"
+);
       }
     };
     

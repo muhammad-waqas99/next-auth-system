@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 
 import "./globals.css";
+import { Toaster } from "react-hot-toast";
 
 
 const montserrat =Montserrat({
@@ -36,6 +37,22 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       
 <body className={`${montserrat.className} min-h-full flex flex-col`}>
   {children}
+         <Toaster
+  position="top-right"
+  containerStyle={{
+    top: 20,
+    right: 20,
+  }}
+  toastOptions={{
+    duration: 5000,
+    style: {
+      maxWidth: "420px",
+      whiteSpace: "normal",
+      lineHeight: "1.4",
+    },
+  }}
+/>
+
 </body>
     </html>
   );
