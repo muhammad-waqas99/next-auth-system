@@ -4,6 +4,8 @@ import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { signupSchema } from "../lib/validationSchema/auth.schema";
+
 
 
 interface SignupForm {
@@ -15,12 +17,23 @@ interface SignupForm {
 
 export default function Signup() {
 
+ 
+   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+ 
+
     const router = useRouter()
   const [user, setUser] = useState<SignupForm>({
     name:"",
     email:"",
     password:""
   })
+
+
+
+
+
+
 
 const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   setUser({ ...user, [e.target.name]: e.target.value });
@@ -29,10 +42,27 @@ const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
 const onSignup = async (e: React.SyntheticEvent<HTMLFormElement>) => {
   e.preventDefault();
+  setFormErrors({})
+     const fieldError: Record<string ,string>= {} 
+     const result = signupSchema.safeParse(user)
+
+   if(!result.success){
+          result.error.issues.forEach(issue =>{
+      const field =issue.path[0] as string
+       fieldError[field] = issue.message
+      
+    })
+
+ 
+    setFormErrors(fieldError)
+    console.log(formErrors)
+       return;
+   }
+  
 
   try {
     const response = await axios.post("/api/auth/signup", user);
-
+     
     console.log(response.data);
 
     router.push(`/verify-email-sent?email=${user.email}`);
@@ -64,6 +94,12 @@ const onSignup = async (e: React.SyntheticEvent<HTMLFormElement>) => {
            focus:ring-2 focus:ring-yellow-300"
            onChange={onChange}
           />
+
+         {formErrors.name && (
+  <p className="mt-1 text-sm text-red-400">
+    {formErrors.name}
+  </p>
+)}
         </div>
 
         <div className="flex flex-col items-start w-full px-8 mb-1.5 mt-3">
@@ -82,6 +118,11 @@ const onSignup = async (e: React.SyntheticEvent<HTMLFormElement>) => {
            focus:ring-2 focus:ring-yellow-300 "
             onChange={onChange}
           />
+                   {formErrors.email && (
+  <p className="mt-1 text-sm text-red-400">
+    {formErrors.email}
+  </p>
+)}
         </div>
 
         <div className="flex flex-col items-start w-full px-8 mb-1.5 mt-3">
@@ -99,6 +140,12 @@ const onSignup = async (e: React.SyntheticEvent<HTMLFormElement>) => {
            focus:ring-2 focus:ring-yellow-300"
            onChange={onChange}
           />
+
+                   {formErrors.password && (
+  <p className="mt-1 text-sm text-red-400">
+    {formErrors.password}
+  </p>
+)}
         </div>
         <div className="px-8 w-full mt-4">
           <button className="w-full  py-3 rounded-lg  text-black  font-bold text-lg bg-yellow-400 hover:bg-yellow-500 " type="submit">
