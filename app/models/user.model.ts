@@ -10,6 +10,8 @@ interface IUser {
   verificationToken?: string;
   verificationTokenExpiry?: Date;
   isVerified:boolean;
+  resetRequestId:string;
+  passwordResetAt:Date | null;
 }
 
 
@@ -49,6 +51,15 @@ const userSchema = new mongoose.Schema<IUser>({
   verificationTokenExpiry: {
     type: Date,
   },
+  resetRequestId: {
+  type: String,
+  default: null,
+},
+
+passwordResetAt: {
+  type: Date,
+  default: null,
+},
   
 });
 

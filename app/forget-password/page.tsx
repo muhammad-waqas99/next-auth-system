@@ -1,16 +1,21 @@
+
 "use client";
 
 import axios from "axios";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type ResetStatus =
   | "idle"
   | "loading"
   | "success"
+  | "reset"
   | "error";
 
 export default function ForgetPassword() {
+  const [resetRequestId, setResetRequestId] =
+    useState<string | null>(null);
+
   const [status, setStatus] =
     useState<ResetStatus>("idle");
 
@@ -18,6 +23,39 @@ export default function ForgetPassword() {
 
   const [errorMessage, setErrorMessage] =
     useState("");
+
+
+  useEffect(() => {
+    if (!resetRequestId) return;
+
+    const checkResetStatus = async () => {
+      try {
+        const response = await axios.get(
+          `/api/auth/reset-password-status?resetRequestId=${resetRequestId}`
+        );
+
+        if (response.data.isReset) {
+          setStatus("reset");
+        }
+      } catch (error: any) {
+        console.log(
+          "Reset status check failed:",
+          error.message
+        );
+      }
+    };
+
+
+    checkResetStatus();
+
+    const interval = setInterval(() => {
+      checkResetStatus();
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [resetRequestId]);
 
   const onSubmit = async (
     e: React.SyntheticEvent<HTMLFormElement>
@@ -35,7 +73,9 @@ export default function ForgetPassword() {
         }
       );
 
-      console.log(response.data);
+      setResetRequestId(
+        response.data.resetRequestId
+      );
 
       setStatus("success");
 
@@ -59,7 +99,7 @@ export default function ForgetPassword() {
 
       <div className="w-full max-w-md">
 
-        {status === "success" ? (
+        {status === "success" && (
 
           <div className="p-8 rounded-2xl border border-zinc-800 bg-zinc-950 text-center">
 
@@ -83,9 +123,44 @@ export default function ForgetPassword() {
               The reset link will expire in 15 minutes.
             </p>
 
+            <p className="text-sm text-zinc-500 mt-3">
+              Waiting for password reset...
+            </p>
+
           </div>
 
-        ) : (
+        )}
+
+        {status === "reset" && (
+
+          <div className="p-8 rounded-2xl border border-zinc-800 bg-zinc-950 text-center">
+
+            <div className="text-4xl mb-4">
+             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M530.8 134.1C545.1 144.5 548.3 164.5 537.9 178.8L281.9 530.8C276.4 538.4 267.9 543.1 258.5 543.9C249.1 544.7 240 541.2 233.4 534.6L105.4 406.6C92.9 394.1 92.9 373.8 105.4 361.3C117.9 348.8 138.2 348.8 150.7 361.3L252.2 462.8L486.2 141.1C496.6 126.8 516.6 123.6 530.9 134z"/></svg>
+            </div>
+
+            <h1 className="text-2xl font-semibold text-white mb-2">
+              Password Reset Successfully
+            </h1>
+
+            <p className="text-sm text-zinc-400 mb-6">
+              Your password has been changed successfully.
+            </p>
+
+            <Link
+              href="/login"
+              className="block w-full py-3 rounded-lg bg-white text-black font-medium"
+            >
+              Go to Login
+            </Link>
+
+          </div>
+
+        )}
+
+        {(status === "idle" ||
+          status === "loading" ||
+          status === "error") && (
 
           <form
             onSubmit={onSubmit}
@@ -151,3 +226,4 @@ export default function ForgetPassword() {
     </main>
   );
 }
+

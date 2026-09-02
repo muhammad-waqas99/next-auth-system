@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
 
     user.resetPasswordToken = undefined;
     user.resetPasswordTokenExpiry = undefined;
+    user.passwordResetAt = new Date();
 
     await user.save();
 

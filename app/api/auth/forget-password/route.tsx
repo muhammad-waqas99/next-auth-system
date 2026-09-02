@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: "User does not exist",
+          message: "If an account exists with this email, a reset link has been sent.",
         },
         { status: 404 }
       );
@@ -42,20 +42,17 @@ export async function POST(request: NextRequest) {
       .update(plainToken)
       .digest("hex");
 
-
-      
     const resetPasswordTokenExpiry = new Date(
       Date.now() + 15 * 60 * 1000
     );
 
+const resetRequestId = crypto.randomUUID();
+user.resetPasswordToken = hashToken;
+user.resetPasswordTokenExpiry = resetPasswordTokenExpiry;
+user.resetRequestId = resetRequestId;
+user.passwordResetAt = null;
 
-    user.resetPasswordToken = hashToken;
-
-    user.resetPasswordTokenExpiry =
-      resetPasswordTokenExpiry;
-
-    await user.save();
-
+await user.save();
    
     await sendMail(email, plainToken, "reset");
 
@@ -63,6 +60,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         message: "Reset password email sent successfully",
+        resetRequestId
       },
       { status: 200 }
     );
