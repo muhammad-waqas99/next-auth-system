@@ -10,6 +10,7 @@ export default function Profile() {
     name: "",
     email: "",
     isVerified: false,
+    authProvider:""
   });
 
   const router = useRouter();
@@ -22,11 +23,14 @@ export default function Profile() {
         const name = response.data.user.name.toString();
         const email = response.data.user.email.toString();
         const isVerified = response.data.user.isVerified;
+        const authProvider = response.data.user.authProvider.toString();
+
 
         setUser({
           name,
           email,
           isVerified,
+          authProvider
         });
       } catch (error) {
         console.log("Something went wrong");
@@ -61,12 +65,21 @@ export default function Profile() {
           )}
         </div>
 
-                <Link href={"/change-password"}
+
+        {user.authProvider ==="google" ?                 <Link href={"/set-password"}
+                  
+        
+          className="rounded-lg bg-green-500 my-2 px-5 py-2 font-semibold transition hover:bg-green-600">
+          Set Password
+        </Link>
+ :                <Link href={"/change-password"}
                   
         
           className="rounded-lg bg-green-500 my-2 px-5 py-2 font-semibold transition hover:bg-green-600">
           Change Password
         </Link>
+}
+
 
         <button
           onClick={onLogout}

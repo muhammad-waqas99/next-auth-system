@@ -63,7 +63,7 @@ try {
 
 
     const email = googleUser.email
-    const name = googleUser.name;
+    const name = googleUser.name 
     const isVerified = googleUser.email_verified;
     const googleID = googleUser.sub;
 
@@ -146,6 +146,7 @@ if (user.password !== null) {
 
     const newGoogleUser = new User({
         email,
+        name,
         googleId:googleID,
         authProvider:"google",
         password:null,

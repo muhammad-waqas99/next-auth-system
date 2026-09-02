@@ -1,22 +1,19 @@
 import mongoose from "mongoose";
-import { required } from "zod/mini";
-
 
 interface IUser {
   name: string;
   email: string;
-  password?: string;
+  password: string | null;
   resetPasswordToken?: string;
   resetPasswordTokenExpiry?: Date;
   verificationToken?: string;
   verificationTokenExpiry?: Date;
-  isVerified:boolean;
-  resetRequestId:string;
-  passwordResetAt:Date | null;
-  googleId?:string;
-  authProvider: "local" | "google" | "both"
+  isVerified: boolean;
+  resetRequestId: string | null;
+  passwordResetAt: Date | null;
+  googleId?: string;
+  authProvider: "local" | "google" | "both";
 }
-
 
 const userSchema = new mongoose.Schema<IUser>({
   name: {
@@ -32,11 +29,12 @@ const userSchema = new mongoose.Schema<IUser>({
 
   password: {
     type: String,
-    
+    default: null,
   },
-  isVerified:{
-    type:Boolean,
-    default:false
+
+  isVerified: {
+    type: Boolean,
+    default: false,
   },
 
   resetPasswordToken: {
@@ -54,28 +52,28 @@ const userSchema = new mongoose.Schema<IUser>({
   verificationTokenExpiry: {
     type: Date,
   },
+
   resetRequestId: {
-  type: String,
-  default: null,
-},
+    type: String,
+    default: null,
+  },
 
-passwordResetAt: {
-  type: Date,
-  default: null,
-},
+  passwordResetAt: {
+    type: Date,
+    default: null,
+  },
 
-googleId:{
-  type:String,
-  unique:true,
-  sparse:true
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
 
-},
-
-authProvider:{
-  type:String,
-  required:true
-}
-  
+  authProvider: {
+    type: String,
+    required: true,
+    enum: ["local", "google", "both"],
+  },
 });
 
 const User = mongoose.model<IUser>("User", userSchema);

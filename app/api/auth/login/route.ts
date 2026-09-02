@@ -46,7 +46,7 @@ if (!result.success) {
 if (user && user.authProvider === "google") {
     return NextResponse.json({
         success: false,
-        message: "Please continue with Google to login."
+        message: "Password login is not available for this account."
     })
 }
 
@@ -59,8 +59,14 @@ if (user && user.authProvider === "google") {
         { status: 401 }
       );
     }
+    if (!user.password) {
+  return NextResponse.json({
+    success: false,
+    message: "Password login is not available for this account.",
+  });
+}
 
-    const checkPassword = await bcrypt.compare(password, user.password!)
+    const checkPassword = await bcrypt.compare(password, user.password)
 
     if(!checkPassword){
       return NextResponse.json(

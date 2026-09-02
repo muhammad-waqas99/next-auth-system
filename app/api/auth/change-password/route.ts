@@ -89,8 +89,13 @@ if (!result.success) {
         { status: 404 }
       );
     }
-
-    const checkPassword = await bcrypt.compare(
+    if (!user.password) {
+  return NextResponse.json({
+    success: false,
+    message: "Password login is not available for this account.",
+  });
+}
+    const checkPassword =  bcrypt.compare(
       currentPassword,
       user.password
     );

@@ -69,6 +69,20 @@ export const changePasswordSchema = z
     message: "New password must be different from current password",
     path: ["newPassword"],
   });
+export const setPasswordSchema = z
+  .object({
+
+    newPassword: passwordSchema,
+
+    confirmPassword: z
+      .string()
+      .min(1, "Confirm password is required"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New password and confirm password do not match",
+    path: ["confirmPassword"],
+  })
+
 
 
 
@@ -124,6 +138,9 @@ export const resetPasswordStatusSchema = z.object({
 
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type SetPasswordInput = z.infer<
+  typeof setPasswordSchema
+>;
 export type ChangePasswordInput = z.infer<
   typeof changePasswordSchema
 >;
