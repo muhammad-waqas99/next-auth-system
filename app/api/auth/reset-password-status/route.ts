@@ -1,5 +1,6 @@
 import connectToDB from "@/app/dbconfig/db";
 import User from "@/app/models/user.model";
+import { resetPasswordStatusSchema } from "@/app/lib/validationSchema/auth.schema";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -7,20 +8,26 @@ export async function GET(request: NextRequest) {
     const resetRequestId =
       request.nextUrl.searchParams.get("resetRequestId");
 
-    if (!resetRequestId) {
+    const result = resetPasswordStatusSchema.safeParse({
+      resetRequestId,
+    });
+
+    if (!result.success) {
       return NextResponse.json(
         {
           success: false,
-          message: "Reset request ID is required",
+          message: result.error.issues[0].message,
         },
         { status: 400 }
       );
     }
 
+    const { resetRequestId: validResetRequestId } = result.data;
+
     await connectToDB();
 
     const user = await User.findOne({
-      resetRequestId,
+      resetRequestId: validResetRequestId,
     });
 
     if (!user) {
@@ -39,6 +46,9 @@ export async function GET(request: NextRequest) {
       {
         success: true,
         isReset,
+        message: isReset
+          ? "Password has been reset successfully"
+          : "Password reset is still pending",
       },
       { status: 200 }
     );
@@ -48,7 +58,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: "Something went wrong",
+        message: "Something went wrong. Please try again later.",
       },
       { status: 500 }
     );

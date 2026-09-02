@@ -4,6 +4,7 @@ import User from "@/app/models/user.model";
 import connectToDB from "@/app/dbconfig/db";
 import crypto from 'crypto';
 import sendMail from "@/app/lib/mail";
+import { signupSchema } from "@/app/lib/validationSchema/auth.schema";
 interface ReqBody {
   name: string;
   email: string;
@@ -13,8 +14,20 @@ interface ReqBody {
 export async function POST(request: NextRequest) {
   try {
     const reqBody: ReqBody = await request.json();
+    const result = signupSchema.safeParse(reqBody);
+    
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: result.error.issues[0].message,
+        },
+        { status: 400 }
+      );
+    }
+    
 
-    const { name, email, password } = reqBody;
+    const { name, email, password } = result.data;
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -67,11 +80,13 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error:any) {
+
+     console.log("Signup error:", error.message);
     return NextResponse.json(
       {
         success: false,
-        message: "Something went wrong",
+        message: "Something went wrong. Please try again later.",
       },
       { status: 500 }
     );

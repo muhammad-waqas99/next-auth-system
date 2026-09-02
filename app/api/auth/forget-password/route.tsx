@@ -3,11 +3,25 @@ import crypto from "node:crypto";
 import User from "@/app/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
 import sendMail from "@/app/lib/mail";
+import { forgotPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 
 export async function POST(request: NextRequest) {
   try {
     const reqBody = await request.json();
-    const { email } = reqBody;
+    const result = forgotPasswordSchema.safeParse(reqBody);
+    
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: result.error.issues[0].message,
+        },
+        { status: 400 }
+      );
+    }
+    
+    const { email } = result.data;
+
 
     if (!email) {
       return NextResponse.json(
@@ -65,13 +79,13 @@ await user.save();
       { status: 200 }
     );
 
-  } catch (error: any) {
-    console.log(error.message);
+  }  catch (error:any) {
 
+     console.log("Forget password error:", error.message);
     return NextResponse.json(
       {
         success: false,
-        message: "Something went wrong",
+        message: "Something went wrong. Please try again later.",
       },
       { status: 500 }
     );

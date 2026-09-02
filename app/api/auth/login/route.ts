@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import User from "@/app/models/user.model";
 import jwt from "jsonwebtoken"
 import connectToDB from "@/app/dbconfig/db";
+import { loginSchema } from "@/app/lib/validationSchema/auth.schema";
 
 interface ReqBody {
   email: string;
@@ -13,7 +14,21 @@ export async function POST(request: NextRequest) {
   try {
     const reqBody: ReqBody = await request.json();
 
-    const {  email, password } = reqBody;
+
+const result = loginSchema.safeParse(reqBody);
+
+if (!result.success) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: result.error.issues[0].message,
+    },
+    { status: 400 }
+  );
+}
+
+
+    const {  email, password } = result.data;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -33,9 +48,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: "email or password are incorrect",
+          message: "Invalid email or password",
         },
-        { status: 400 }
+        { status: 401 }
       );
     }
 
@@ -45,9 +60,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: "email or password are incorrect",
+          message: "Invalid email or password",
         },
-        { status: 400 }
+        { status: 401 }
       );
     }
 
@@ -55,7 +70,7 @@ export async function POST(request: NextRequest) {
     if(!user.isVerified){
       return NextResponse.json({
   "success": false,
-  "message": "Please verify your email before logging in"
+  "message": "Please verify your email before logging in. Check your inbox for the verification link."
 },{status:403})
     }
 
@@ -85,11 +100,13 @@ export async function POST(request: NextRequest) {
 
   return response;
 
-  } catch (error) {
+  } catch (error:any) {
+
+     console.log("Login error:", error.message);
     return NextResponse.json(
       {
         success: false,
-        message: "Something went wrong",
+        message: "Something went wrong. Please try again later.",
       },
       { status: 500 }
     );

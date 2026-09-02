@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import connectToDB from "@/app/dbconfig/db";
 import User from "@/app/models/user.model";
 import bcrypt from "bcryptjs";
+import { changePasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 
 interface TokenPayload {
   id: string;
@@ -18,8 +19,18 @@ interface ChangePasswordBody {
 export async function POST(request: NextRequest) {
   try {
     const reqBody: ChangePasswordBody = await request.json();
+const result = changePasswordSchema.safeParse(reqBody);
 
-    const { currentPassword, newPassword, confirmPassword } = reqBody;
+if (!result.success) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: result.error.issues[0].message,
+    },
+    { status: 400 }
+  );
+}
+    const { currentPassword, newPassword, confirmPassword } = result.data;
 
     if (!currentPassword || !newPassword || !confirmPassword) {
       return NextResponse.json(

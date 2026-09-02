@@ -3,16 +3,30 @@ import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import connectToDB from "@/app/dbconfig/db";
+import { resetPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 
 export async function POST(request: NextRequest) {
   try {
     const reqBody = await request.json();
 
-    const {
+
+    const result = resetPasswordSchema.safeParse(reqBody);
+    
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: result.error.issues[0].message,
+        },
+        { status: 400 }
+      );
+    }
+        const {
       password,
       plainToken,
       confirmPassword
-    } = reqBody;
+    } = result.data;
+
 
     if (!password || !plainToken || !confirmPassword) {
       return NextResponse.json(
@@ -95,13 +109,13 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
 
-  } catch (error: any) {
-    console.log(error.message);
+  } catch (error:any) {
 
+     console.log("Reset password error:", error.message);
     return NextResponse.json(
       {
         success: false,
-        message: "Something went wrong",
+        message: "Something went wrong. Please try again later.",
       },
       { status: 500 }
     );

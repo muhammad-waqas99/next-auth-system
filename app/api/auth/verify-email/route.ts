@@ -1,52 +1,79 @@
 import connectToDB from "@/app/dbconfig/db";
 import User from "@/app/models/user.model";
+import { verifyEmailSchema } from "@/app/lib/validationSchema/auth.schema";
 import { NextRequest, NextResponse } from "next/server";
 
-export  async function POST(request:NextRequest) {
-    
-    const { token } = await request.json();
-       
+export async function POST(request: NextRequest) {
+  try {
+    const reqBody = await request.json();
 
-    if(!token){
-        return NextResponse.json({
-            success:false,
-            message:"invalid Token"
-        })
-    }
-    await connectToDB()
 
-    const user = await User.findOne({verificationToken:token})
+    const result = verifyEmailSchema.safeParse(reqBody);
 
-    if(!user){
-                return NextResponse.json({
-            success:false,
-            message:"invalid Token"
-        })
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: result.error.issues[0].message,
+        },
+        { status: 400 }
+      );
     }
 
-const isExpired =
-  user.verificationTokenExpiry &&
-  user.verificationTokenExpiry.getTime() < Date.now();
+    const { token } = result.data;
 
-if (isExpired) {
-           return NextResponse.json({
-            success:false,
-            message:"Verification Email Expire"
-        })
+    await connectToDB();
+
+    const user = await User.findOne({
+      verificationToken: token,
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid or expired verification token",
+        },
+        { status: 401 }
+      );
+    }
+
+    const isExpired =
+      user.verificationTokenExpiry &&
+      user.verificationTokenExpiry.getTime() < Date.now();
+
+    if (isExpired) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Verification link has expired",
+        },
+        { status: 400 }
+      );
+    }
+
+    user.verificationToken = undefined;
+    user.verificationTokenExpiry = undefined;
+    user.isVerified = true;
+
+    await user.save();
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Email verified successfully",
+      },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.log("Email verification error:", error.message);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Something went wrong. Please try again later.",
+      },
+      { status: 500 }
+    );
+  }
 }
- user.verificationToken = undefined
-user.verificationTokenExpiry = undefined
-user.isVerified = true
-  await user.save()
- 
-
-        return NextResponse.json({
-            success:true,
-            message:"User Verified Successfully"
-        })
-
-}
-
-
-    
-
