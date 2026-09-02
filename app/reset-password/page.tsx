@@ -19,6 +19,7 @@ export default function ResetPassword() {
 
   const plainToken = searchParams.get("token");
 
+
   const [status, setStatus] =
     useState<ResetStatus>("idle");
 
@@ -28,6 +29,7 @@ export default function ResetPassword() {
   const [formDetails, setFormDetails] = useState({
     password: "",
     confirmPassword: "",
+    plainToken
   });
 
   const onChange = (
@@ -42,6 +44,8 @@ export default function ResetPassword() {
   const onSubmit = async (
     e: React.SyntheticEvent<HTMLFormElement>
   ) => {
+
+    console.log('onclick hit')
            e.preventDefault();
         setFormErrors({})
           const fieldError: Record<string ,string>= {} 
@@ -56,13 +60,15 @@ export default function ResetPassword() {
       
       
           setFormErrors(fieldError)
-        
+      console.log(fieldError)  
             return;
         }
 
     try {
       setStatus("loading");
       setErrorMessage("");
+
+      console.log("get in try block")
 
       const response = await axios.post(
         "/api/auth/reset-password",
@@ -184,9 +190,9 @@ export default function ResetPassword() {
               onChange={onChange}
               className="w-full px-4 py-3 mb-5 rounded-lg bg-zinc-900 border border-zinc-800 text-white outline-none focus:border-white"
             />
-                                {formErrors.newPassword && (
+                                {formErrors.password && (
     <p className="mt-1 text-sm text-red-400">
-      {formErrors.newPassword}
+      {formErrors.password}
     </p>
   )}
        

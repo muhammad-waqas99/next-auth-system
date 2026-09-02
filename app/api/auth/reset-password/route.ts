@@ -8,7 +8,7 @@ import { resetPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 export async function POST(request: NextRequest) {
   try {
     const reqBody = await request.json();
-
+  console.log("reset api hit")
 
     const result = resetPasswordSchema.safeParse(reqBody);
     

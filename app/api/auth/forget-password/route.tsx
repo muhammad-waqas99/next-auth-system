@@ -46,6 +46,16 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+    if (user.authProvider === "google") {
+  return NextResponse.json(
+    {
+      success: false,
+      message:
+        "This account uses Google Sign-In. Please continue with Google.",
+    },
+    { status: 400 }
+  );
+}
 
     const plainToken = crypto
       .randomBytes(32)
