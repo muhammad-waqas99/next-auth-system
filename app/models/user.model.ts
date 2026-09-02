@@ -5,8 +5,8 @@ interface IUser {
   name: string;
   email: string;
   password: string;
-  forgetPasswordToken?: string;
-  forgetPasswordTokenExpiry?: Date;
+  resetPasswordToken?: string;
+  resetPasswordTokenExpiry?: Date;
   verificationToken?: string;
   verificationTokenExpiry?: Date;
   isVerified:boolean;
@@ -34,11 +34,11 @@ const userSchema = new mongoose.Schema<IUser>({
     default:false
   },
 
-  forgetPasswordToken: {
+  resetPasswordToken: {
     type: String,
   },
 
-  forgetPasswordTokenExpiry: {
+  resetPasswordTokenExpiry: {
     type: Date,
   },
 
@@ -49,6 +49,7 @@ const userSchema = new mongoose.Schema<IUser>({
   verificationTokenExpiry: {
     type: Date,
   },
+  
 });
 
 const User = mongoose.model<IUser>("User", userSchema);

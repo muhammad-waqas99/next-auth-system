@@ -82,6 +82,8 @@ export default function Login() {
            onChange={onChange}
           />
         </div>
+
+        <Link href={'/forget-password'} className="w-full px-8 text-sm text-blue-500 hover:underline text-right" >ForgetPassword?</Link>
         <div className="px-8 w-full mt-4">
           <button type="submit" className="w-full  py-3 rounded-lg  text-black  font-bold text-lg bg-yellow-400 hover:bg-yellow-500 ">
             Login
