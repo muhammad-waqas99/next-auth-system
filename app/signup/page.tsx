@@ -77,6 +77,15 @@ const onSignup = async (e: React.SyntheticEvent<HTMLFormElement>) => {
   }
 };
 
+
+const onGoogleClick = async () =>{
+  try {
+    window.location.href = "/api/auth/google";
+  } catch (error) {
+     console.log(error)
+  }
+}
+
   return (
     <div className="flex min-h-screen items-center justify-center">
       <form onSubmit={onSignup} className="flex w-full max-w-md flex-col items-center bg-black rounded-4xl p-8 shadow-2xl gap-3">
@@ -165,6 +174,14 @@ const onSignup = async (e: React.SyntheticEvent<HTMLFormElement>) => {
           </Link>
         </p>
       </form>
+
+      <button onClick={onGoogleClick} className="w-44  rounded-3xl text-white font-bold bg-violet-500  px-4 py-2 my-2">
+        Signup with Google
+      </button>
+
+      
     </div>
+    
   );
 }
+

@@ -43,6 +43,12 @@ if (!result.success) {
     await connectToDB();
 
     const user = await User.findOne({ email });
+if (user && user.authProvider === "google") {
+    return NextResponse.json({
+        success: false,
+        message: "Please continue with Google to login."
+    })
+}
 
     if (!user) {
       return NextResponse.json(
@@ -54,7 +60,7 @@ if (!result.success) {
       );
     }
 
-    const checkPassword = await bcrypt.compare(password, user.password)
+    const checkPassword = await bcrypt.compare(password, user.password!)
 
     if(!checkPassword){
       return NextResponse.json(

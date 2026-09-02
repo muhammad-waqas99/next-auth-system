@@ -4,7 +4,9 @@ import User from "@/app/models/user.model";
 import connectToDB from "@/app/dbconfig/db";
 import crypto from 'crypto';
 import sendMail from "@/app/lib/mail";
+
 import { signupSchema } from "@/app/lib/validationSchema/auth.schema";
+
 interface ReqBody {
   name: string;
   email: string;
@@ -42,6 +44,14 @@ export async function POST(request: NextRequest) {
     await connectToDB();
 
     const user = await User.findOne({ email });
+       const isGoogleUser = !!user?.googleId;
+
+       if(isGoogleUser && user){
+          return NextResponse.json({
+            success:false , 
+            message:"Account already exists. Please continue with Google."
+          })
+       }
 
     if (user) {
       return NextResponse.json(

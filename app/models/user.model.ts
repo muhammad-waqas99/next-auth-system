@@ -1,10 +1,11 @@
 import mongoose from "mongoose";
+import { required } from "zod/mini";
 
 
 interface IUser {
   name: string;
   email: string;
-  password: string;
+  password?: string;
   resetPasswordToken?: string;
   resetPasswordTokenExpiry?: Date;
   verificationToken?: string;
@@ -12,6 +13,8 @@ interface IUser {
   isVerified:boolean;
   resetRequestId:string;
   passwordResetAt:Date | null;
+  googleId?:string;
+  authProvider: "local" | "google" | "both"
 }
 
 
@@ -29,7 +32,7 @@ const userSchema = new mongoose.Schema<IUser>({
 
   password: {
     type: String,
-    required: true,
+    
   },
   isVerified:{
     type:Boolean,
@@ -60,6 +63,18 @@ passwordResetAt: {
   type: Date,
   default: null,
 },
+
+googleId:{
+  type:String,
+  unique:true,
+  sparse:true
+
+},
+
+authProvider:{
+  type:String,
+  required:true
+}
   
 });
 
