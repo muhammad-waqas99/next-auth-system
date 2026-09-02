@@ -3,8 +3,10 @@
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { changePasswordSchema } from "../lib/validationSchema/auth.schema";
 
 export default function ChangePassword() {
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const router = useRouter();
   const [formDetails, setFormDetails] = useState({
     currentpassword: "",
@@ -20,6 +22,25 @@ export default function ChangePassword() {
     e.preventDefault();
 
     try {
+
+              e.preventDefault();
+        setFormErrors({})
+          const fieldError: Record<string ,string>= {} 
+          const result = changePasswordSchema.safeParse(formDetails)
+      
+        if(!result.success){
+                result.error.issues.forEach(issue =>{
+            const field =issue.path[0] as string
+            fieldError[field] = issue.message
+            
+          })
+      
+      
+          setFormErrors(fieldError)
+        
+            return;
+        }
+        
       const response = await axios.post(
         "/api/auth/change-password",
         formDetails,
@@ -82,6 +103,11 @@ export default function ChangePassword() {
               id="currentPassword"
               className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-500 outline-none transition focus:border-white focus:ring-1 focus:ring-white"
             />
+                             {formErrors.currentPassword && (
+    <p className="mt-1 text-sm text-red-400">
+      {formErrors.currentPassword}
+    </p>
+  )}
           </div>
 
           <div className="mb-5">
@@ -101,6 +127,11 @@ export default function ChangePassword() {
               id="newPassword"
               className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-500 outline-none transition focus:border-white focus:ring-1 focus:ring-white"
             />
+                                         {formErrors.newPassword && (
+    <p className="mt-1 text-sm text-red-400">
+      {formErrors.newPassword}
+    </p>
+  )}
           </div>
           
           <div className="mb-7">
@@ -120,6 +151,11 @@ export default function ChangePassword() {
               id="confirmPassword"
               className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-500 outline-none transition focus:border-white focus:ring-1 focus:ring-white"
             />
+                                         {formErrors.confirmPassword && (
+    <p className="mt-1 text-sm text-red-400">
+      {formErrors.confirmPassword}
+    </p>
+  )}
           </div>
           <button
             type="submit"

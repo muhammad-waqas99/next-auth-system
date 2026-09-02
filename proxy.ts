@@ -4,7 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 export function proxy(request : NextRequest){
     const path = request.nextUrl.pathname;
 
-    const isPublicPath = path==="/login" || path==="/signup" || path==="/verify-email" || path ==="/verify-email-sent"
+    const isPublicPath = path==="/login" || path==="/signup" || path==="/verify-email" || path ==="/verify-email-sent" || path=="/forget-password" || path=="/reset-password"
+
 
     const token = request.cookies.get("token")?.value
 
@@ -62,6 +63,8 @@ matcher: [
   "/profile",
   "/verify-email",
   "/verify-email-sent",
-  "/change-password"
+  "/change-password",
+  "/forget-password",
+  "/reset-password"
 ]
 }

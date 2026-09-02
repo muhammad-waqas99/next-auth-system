@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     await newUser.save();
 
-    await sendMail(email,verificationToken)
+    await sendMail(email,verificationToken,"verify")
   
     return NextResponse.json(
       {
