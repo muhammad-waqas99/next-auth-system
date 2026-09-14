@@ -56,6 +56,14 @@ export function generateRefreshToken(){
     throw new Error(`Error in generateRefreshToken Error :  ${error.message} `) 
  } 
 } 
+export function generateSessionId(){ 
+ try { 
+    const sessionId = crypto.randomBytes(16).toString("hex") 
+    return sessionId
+ } catch (error:any) { 
+    throw new Error(`Error in generateSessionId Error :  ${error.message} `) 
+ } 
+} 
 export function hashRefreshToken(token:string){ 
  try { 
     const hashRefreshTokenrefreshToken = crypto.createHash('sha256').update(token).digest("hex") 
@@ -64,3 +72,4 @@ export function hashRefreshToken(token:string){
     throw new Error(`Error in hashRefreshToken Error :  ${error.message}`) 
  } 
 } 
+

@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import User from "@/app/models/user.model";
-import jwt from "jsonwebtoken"
+
 import connectToDB from "@/app/dbconfig/db";
 import { loginSchema } from "@/app/lib/validationSchema/auth.schema";
+import { createAccessToken, generateRefreshToken, generateSessionId, hashRefreshToken } from "@/app/lib/auth/token";
+import RefreshToken from "@/app/models/refreshToken.model";
+
 
 interface ReqBody {
   email: string;
@@ -87,12 +90,41 @@ if (user && user.authProvider === "google") {
     }
 
     
-    const tokenData ={
-        id:user._id.toString(),
-        email:user.email,
-    }
-      const secret = process.env.JWT_SECRET
-    const token = jwt.sign(tokenData ,secret! ,{expiresIn:"1d"})
+  const accessPayload = {
+    id: user.id,
+    type:"access"
+  }
+ const accessToken = createAccessToken(accessPayload)
+
+ const refreshToken = generateRefreshToken()
+
+ const hashedRefreshToken = hashRefreshToken(refreshToken)
+
+ const currentDate =Date.now()
+ const expiryDate = new Date(currentDate + 6.048e+8)
+
+ const sessionExpiresAt = new Date(currentDate + 2.592e+9)
+
+ const sessionId = generateSessionId()
+
+
+
+ 
+ const newRefreshToken = new RefreshToken({
+   userId : user.id,
+   expiresAt:expiryDate,
+   sessionExpiresAt,
+   tokenHash:hashedRefreshToken,
+   sessionId
+ })
+
+
+ await newRefreshToken.save()
+
+
+
+
+
 
 
 
@@ -102,9 +134,19 @@ if (user && user.authProvider === "google") {
   );
 
   response.cookies.set({
-    name: 'token',
-    value: token,
-    httpOnly: true, 
+    name: 'accessToken',
+    value: accessToken,
+    httpOnly: true,
+    sameSite: "lax", 
+  
+    maxAge: 60 *15, 
+   
+  });
+  response.cookies.set({
+    name: 'refreshToken',
+    value: refreshToken,
+    httpOnly: true,
+    sameSite: "lax", 
   
     maxAge: 60 * 60 * 24 * 7, 
    
