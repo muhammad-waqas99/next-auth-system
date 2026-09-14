@@ -24,14 +24,17 @@ await connectToDB()
 
  const refreshTokenCheck = await RefreshToken.findOne({tokenHash:hashedRefreshToken})
 
+
  if(!refreshTokenCheck){
     return NextResponse.json({success : false , message: "invalid Refresh Token "} , {status:401})
  }
 
- const revokedAt = refreshTokenCheck.revokedAt
-const currentDate = new Date
+ const revokedAt =refreshTokenCheck.revokedAt
+
+const currentDate = new Date()
+
  if(revokedAt !== null || refreshTokenCheck.expiresAt < currentDate || refreshTokenCheck.sessionExpiresAt < currentDate){
-  
+       
     return NextResponse.json({success : false , message: "refresh token is expired"} , {status:401})
  
  }

@@ -15,7 +15,7 @@ export function createAccessToken(payload:Payload){
  
 try { 
      
-    const accessToken =jwt.sign(payload,JWT_SECRET!,{expiresIn:"15m"}) 
+    const accessToken =jwt.sign(payload,JWT_SECRET!,{expiresIn:"15s"}) 
  
     return accessToken; 
 } catch (error:any) { 
@@ -66,7 +66,7 @@ export function generateSessionId(){
 } 
 export function hashRefreshToken(token:string){ 
  try { 
-    const hashRefreshTokenrefreshToken = crypto.createHash('sha256').update(token).digest("hex") 
+    const hashRefreshToken = crypto.createHash('sha256').update(token).digest("hex") 
     return hashRefreshToken 
  } catch (error:any) { 
     throw new Error(`Error in hashRefreshToken Error :  ${error.message}`) 

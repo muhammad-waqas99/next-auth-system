@@ -14,11 +14,14 @@ export default function Profile() {
   });
 
   const router = useRouter();
-
+const axiosInstance = axios.create({
+  withCredentials: true,
+});
   useEffect(() => {
     const getUserDetails = async () => {
       try {
-        const response = await axios.get("/api/auth/me");
+        const response = await axiosInstance.get("/api/auth/me");
+         
 
         const name = response.data.user.name.toString();
         const email = response.data.user.email.toString();
@@ -32,8 +35,34 @@ export default function Profile() {
           isVerified,
           authProvider
         });
-      } catch (error) {
-        console.log("Something went wrong");
+      } catch (error:any) {
+        if(error.response?.status ===401){
+            try {
+      await axiosInstance.post("/api/auth/refresh");
+
+      const retryResponse = await axiosInstance.get("/api/auth/me");
+      
+        const name = retryResponse.data.user.name.toString();
+        const email = retryResponse.data.user.email.toString();
+        const isVerified = retryResponse.data.user.isVerified;
+        const authProvider = retryResponse.data.user.authProvider.toString();
+
+
+        setUser({
+          name,
+          email,
+          isVerified,
+          authProvider
+        });
+
+   
+    } catch {
+ console.log("Something went wrong");
+      router.push("/login");
+    }
+
+        }
+       
       }
     };
 

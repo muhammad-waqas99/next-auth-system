@@ -1,19 +1,20 @@
 import User from "@/app/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
+
 import connectToDB from "@/app/dbconfig/db";
+import { verifyAccessToken } from "@/app/lib/auth/token";
 
 interface TokenPayload {
   id: string;
-  email: string;
+  type: string;
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get("token")?.value;
+    const accessToken = request.cookies.get("accessToken")?.value;
 
  
-    if (!token) {
+    if (!accessToken) {
       return NextResponse.json(
         {
           success: false,
@@ -23,22 +24,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-  
-    const jwtUserDetails = jwt.verify(
-      token,
-      process.env.JWT_SECRET!
-    );
-
- 
-    if (typeof jwtUserDetails === "string") {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid token payload",
-        },
-        { status: 401 }
-      );
-    }
+ const jwtUserDetails = verifyAccessToken(accessToken)
 
     const { id: userID } = jwtUserDetails as TokenPayload;
 

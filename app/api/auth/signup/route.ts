@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
       name,
       email,
       password: hashedPassword,
+      authProvider:"local",
       verificationToken,
       verificationTokenExpiry
     });
