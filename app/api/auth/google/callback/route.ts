@@ -1,7 +1,9 @@
 import User from "@/app/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken"
+
 import connectToDB from "@/app/dbconfig/db";
+import RefreshToken from "@/app/models/refreshToken.model";
+import { createAccessToken, generateRefreshToken, generateSessionId, hashRefreshToken } from "@/app/lib/auth/token";
 
 
 export async function GET(request:NextRequest){
@@ -85,27 +87,61 @@ if (user.password !== null) {
         await user.save()
 
 
-          const tokenData ={
-              id:user._id.toString(),
-              email:user.email,
-          }
-            const secret = process.env.JWT_SECRET
-          const token = jwt.sign(tokenData ,secret! ,{expiresIn:"1d"})
-      
-      
+  const accessPayload = {
+    id: user.id,
+    type:"access"
+  }
+ const accessToken = createAccessToken(accessPayload)
+
+ const refreshToken = generateRefreshToken()
+
+ const hashedRefreshToken = hashRefreshToken(refreshToken)
+
+ const currentDate =Date.now()
+ const expiryDate = new Date(currentDate + 6.048e+8)
+
+ const sessionExpiresAt = new Date(currentDate + 2.592e+9)
+
+ const sessionId = generateSessionId()
+
+
+
+ 
+ const newRefreshToken = new RefreshToken({
+   userId : user.id,
+   expiresAt:expiryDate,
+   sessionExpiresAt,
+   tokenHash:hashedRefreshToken,
+   sessionId
+ })
+
+
+ await newRefreshToken.save()
+
 
     const response = NextResponse.redirect(
     new URL("/profile?message=google-login", request.url)
 )
 
-         response.cookies.set({
-    name: 'token',
-    value: token,
-    httpOnly: true, 
+  response.cookies.set({
+    name: 'accessToken',
+    value: accessToken,
+    httpOnly: true,
+    sameSite: "lax", 
+  
+    maxAge: 60 *15, 
+   
+  });
+  response.cookies.set({
+    name: 'refreshToken',
+    value: refreshToken,
+    httpOnly: true,
+    sameSite: "lax", 
   
     maxAge: 60 * 60 * 24 * 7, 
    
   });
+
 
   return response
     }
@@ -118,23 +154,58 @@ if (user.password !== null) {
         localUser.googleId =googleID;
         await localUser.save()
 
-                  const tokenData ={
-              id:localUser._id.toString(),
-              email:localUser.email,
-          }
-            const secret = process.env.JWT_SECRET
-          const token = jwt.sign(tokenData ,secret! ,{expiresIn:"1d"})
+
       
       
+  const accessPayload = {
+    id: localUser.id,
+    type:"access"
+  }
+ const accessToken = createAccessToken(accessPayload)
+
+ const refreshToken = generateRefreshToken()
+
+ const hashedRefreshToken = hashRefreshToken(refreshToken)
+
+ const currentDate =Date.now()
+ const expiryDate = new Date(currentDate + 6.048e+8)
+
+ const sessionExpiresAt = new Date(currentDate + 2.592e+9)
+
+ const sessionId = generateSessionId()
+
+
+
+ 
+ const newRefreshToken = new RefreshToken({
+   userId : localUser.id,
+   expiresAt:expiryDate,
+   sessionExpiresAt,
+   tokenHash:hashedRefreshToken,
+   sessionId
+ })
+
+
+ await newRefreshToken.save()
 
     const response = NextResponse.redirect(
     new URL("/profile?message=google-linked", request.url)
 )
 
-         response.cookies.set({
-    name: 'token',
-    value: token,
-    httpOnly: true, 
+  response.cookies.set({
+    name: 'accessToken',
+    value: accessToken,
+    httpOnly: true,
+    sameSite: "lax", 
+  
+    maxAge: 60 *15, 
+   
+  });
+  response.cookies.set({
+    name: 'refreshToken',
+    value: refreshToken,
+    httpOnly: true,
+    sameSite: "lax", 
   
     maxAge: 60 * 60 * 24 * 7, 
    
@@ -155,20 +226,56 @@ if (user.password !== null) {
     })
 
     await newGoogleUser.save()
-                  const googleUsertokenData ={
-              id:newGoogleUser._id.toString(),
-              email:newGoogleUser.email,
-          }
-            const secret = process.env.JWT_SECRET
-          const token = jwt.sign(googleUsertokenData ,secret! ,{expiresIn:"1d"})
+
+  const accessPayload = {
+    id: newGoogleUser.id,
+    type:"access"
+  }
+ const accessToken = createAccessToken(accessPayload)
+
+ const refreshToken = generateRefreshToken()
+
+ const hashedRefreshToken = hashRefreshToken(refreshToken)
+
+ const currentDate =Date.now()
+ const expiryDate = new Date(currentDate + 6.048e+8)
+
+ const sessionExpiresAt = new Date(currentDate + 2.592e+9)
+
+ const sessionId = generateSessionId()
+
+
+
+ 
+ const newRefreshToken = new RefreshToken({
+   userId : newGoogleUser.id,
+   expiresAt:expiryDate,
+   sessionExpiresAt,
+   tokenHash:hashedRefreshToken,
+   sessionId
+ })
+
+
+ await newRefreshToken.save()
+
  const response = NextResponse.redirect(
     new URL("/profile?message=local-g-login", request.url)
 )
 
-         response.cookies.set({
-    name: 'token',
-    value: token,
-    httpOnly: true, 
+  response.cookies.set({
+    name: 'accessToken',
+    value: accessToken,
+    httpOnly: true,
+    sameSite: "lax", 
+  
+    maxAge: 60 *15, 
+   
+  });
+  response.cookies.set({
+    name: 'refreshToken',
+    value: refreshToken,
+    httpOnly: true,
+    sameSite: "lax", 
   
     maxAge: 60 * 60 * 24 * 7, 
    
