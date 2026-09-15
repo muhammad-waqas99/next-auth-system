@@ -4,6 +4,7 @@ import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { axiosInstance } from "../lib/axios/axiosInstance";
 
 export default function Profile() {
   const [user, setUser] = useState({
@@ -14,57 +15,28 @@ export default function Profile() {
   });
 
   const router = useRouter();
-const axiosInstance = axios.create({
-  withCredentials: true,
-});
+
   useEffect(() => {
-    const getUserDetails = async () => {
-      try {
-        const response = await axiosInstance.get("/api/auth/me");
-         
+const getUserDetails = async () => {
+  try {
+    const response = await axiosInstance.get("/api/auth/me");
 
-        const name = response.data.user.name.toString();
-        const email = response.data.user.email.toString();
-        const isVerified = response.data.user.isVerified;
-        const authProvider = response.data.user.authProvider.toString();
+    const name = response.data.user.name.toString();
+    const email = response.data.user.email.toString();
+    const isVerified = response.data.user.isVerified;
+    const authProvider = response.data.user.authProvider.toString();
 
-
-        setUser({
-          name,
-          email,
-          isVerified,
-          authProvider
-        });
-      } catch (error:any) {
-        if(error.response?.status ===401){
-            try {
-      await axiosInstance.post("/api/auth/refresh");
-
-      const retryResponse = await axiosInstance.get("/api/auth/me");
-      
-        const name = retryResponse.data.user.name.toString();
-        const email = retryResponse.data.user.email.toString();
-        const isVerified = retryResponse.data.user.isVerified;
-        const authProvider = retryResponse.data.user.authProvider.toString();
-
-
-        setUser({
-          name,
-          email,
-          isVerified,
-          authProvider
-        });
-
-   
-    } catch {
- console.log("Something went wrong");
-      router.push("/login");
-    }
-
-        }
-       
-      }
-    };
+    setUser({
+      name,
+      email,
+      isVerified,
+      authProvider,
+    });
+  } catch (error: any) {
+    console.log("Something went wrong:", error.message);
+    router.push("/login");
+  }
+};
 
     getUserDetails();
   }, []);
