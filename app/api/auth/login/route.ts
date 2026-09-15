@@ -6,6 +6,7 @@ import connectToDB from "@/app/dbconfig/db";
 import { loginSchema } from "@/app/lib/validationSchema/auth.schema";
 import { createAccessToken, generateRefreshToken, generateSessionId, hashRefreshToken } from "@/app/lib/auth/token";
 import RefreshToken from "@/app/models/refreshToken.model";
+import { UAParser } from "ua-parser-js";
 
 
 interface ReqBody {
@@ -109,13 +110,26 @@ if (user && user.authProvider === "google") {
 
 
 
- 
+const userAgent = request.headers.get("user-agent") ?? "";
+
+const parser = new UAParser(userAgent);
+
+const browser = parser.getBrowser().name || "Unknown";
+const os = parser.getOS().name || "Unknown";
+
+const deviceInfo = parser.getDevice();
+const device = deviceInfo.type || "Desktop";
+
+
  const newRefreshToken = new RefreshToken({
    userId : user.id,
    expiresAt:expiryDate,
    sessionExpiresAt,
    tokenHash:hashedRefreshToken,
-   sessionId
+   sessionId,
+   os,
+   browser,
+   device
  })
 
 

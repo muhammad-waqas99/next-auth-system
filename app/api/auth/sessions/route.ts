@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     const sessions = await RefreshToken.find({
       userId,
       revokedAt: null,
-    }).select("sessionId createdAt updatedAt lastUsedAt");
+    }).select("sessionId createdAt updatedAt lastUsedAt os browser device");
 console.log(sessions);
     return NextResponse.json(
       {

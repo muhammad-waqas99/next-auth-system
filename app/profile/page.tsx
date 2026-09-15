@@ -209,46 +209,56 @@ const onLogoutSession = async (sessionId: string) => {
 
           <div className="space-y-3">
             {sessions.map((session) => (
-              <div
-                key={session.sessionId}
-                className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-4"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold">
-                      Session
-                    </p>
+<div
+  key={session.sessionId}
+  className="rounded-xl border border-gray-700 bg-[#1a1a1a] p-5"
+>
+  <div className="flex items-start justify-between gap-4">
+    <div>
+      <div className="flex items-center gap-2">
+        <p className="text-lg font-semibold">
+          {session.browser} on {session.os}
+        </p>
 
-                    <p className="text-sm text-gray-400">
-                      {session.sessionId}
-                    </p>
-                  </div>
+        {session.sessionId === currentSessionId && (
+          <span className="rounded-full bg-green-500 px-2.5 py-1 text-xs font-semibold text-black">
+            Current
+          </span>
+        )}
+      </div>
 
-                  {session.sessionId === currentSessionId && (
-                    <span className="rounded-full bg-green-500 px-3 py-1 text-sm font-semibold text-black">
-                      Current Session
-                    </span>
-                  )}
-                </div>
-
-                <p className="mt-2 text-sm text-gray-400">
-                  Created:{" "}
-                  {new Date(session.createdAt).toLocaleString()}
-                </p>
-{session.lastUsedAt && (
-  <p className="text-sm text-gray-400">
-    Last used: {getTimeAgo(session.lastUsedAt)}
-  </p>
-)}
+      <p className="mt-1 text-sm text-gray-400">
+        {session.device}
+      </p>
+    </div>
 
     <button
       onClick={() => onLogoutSession(session.sessionId)}
       type="button"
-      className="rounded-lg bg-red-500 px-5 py-2 mt-3 font-semibold transition hover:bg-red-600"
+      className="shrink-0 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold transition hover:bg-red-600"
     >
-      Logout this session
+      Logout
     </button>
-              </div>
+  </div>
+
+  <div className="mt-4 space-y-1 border-t border-gray-700 pt-3">
+    <p className="text-sm text-gray-400">
+      Created:{" "}
+      <span className="text-gray-300">
+        {new Date(session.createdAt).toLocaleString()}
+      </span>
+    </p>
+
+    {session.lastUsedAt && (
+      <p className="text-sm text-gray-400">
+        Last used:{" "}
+        <span className="text-gray-300">
+          {getTimeAgo(session.lastUsedAt)}
+        </span>
+      </p>
+    )}
+  </div>
+</div>
             ))}
           </div>
         </div>

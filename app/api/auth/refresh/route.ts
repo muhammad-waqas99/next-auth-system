@@ -87,7 +87,10 @@ const newRotateRefreshToken = new RefreshToken({
     userId:refreshTokenCheck.userId,
     tokenHash:newHashedRefreshToken,
     sessionId:refreshTokenCheck.sessionId,
-    lastUsedAt:currentDate
+    lastUsedAt:currentDate,
+      os: refreshTokenCheck.os,
+  browser: refreshTokenCheck.browser,
+  device: refreshTokenCheck.device,
     
 
 })
