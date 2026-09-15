@@ -75,6 +75,28 @@ export default function Profile() {
     }
   };
 
+const onLogoutSession = async (sessionId: string) => {
+  try {
+    if (sessionId === currentSessionId) {
+      await axios.post("/api/auth/logout");
+
+      router.push("/login");
+      return;
+    }
+
+    await axios.post("/api/auth/logout-session", {
+      sessionId,
+    });
+
+    setSessions((prevSessions) =>
+      prevSessions.filter(
+        (session) => session.sessionId !== sessionId
+      )
+    );
+  } catch (error: any) {
+    console.log("Logout failed:", error.message);
+  }
+};
   return (
     <div className="min-h-screen bg-[#111111] text-white">
       <nav className="flex items-center justify-between px-8 py-5">
@@ -201,6 +223,14 @@ export default function Profile() {
                     {new Date(session.lastUsedAt).toLocaleString()}
                   </p>
                 )}
+
+    <button
+      onClick={() => onLogoutSession(session.sessionId)}
+      type="button"
+      className="rounded-lg bg-red-500 px-5 py-2 font-semibold transition hover:bg-red-600"
+    >
+      Logout this session
+    </button>
               </div>
             ))}
           </div>
