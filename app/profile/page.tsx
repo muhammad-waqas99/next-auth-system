@@ -7,6 +7,25 @@ import { useEffect, useState } from "react";
 import { axiosInstance } from "../lib/axios/axiosInstance";
 
 export default function Profile() {
+
+
+  const getTimeAgo = (date: string) => {
+  const diff = Date.now() - new Date(date).getTime();
+
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 60) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  if (hours < 24) return `${hours} hr ago`;
+  if (days < 30) return `${days} days ago`;
+
+  return new Date(date).toLocaleDateString();
+};
+
+
   const [user, setUser] = useState({
     name: "",
     email: "",
@@ -216,18 +235,16 @@ const onLogoutSession = async (sessionId: string) => {
                   Created:{" "}
                   {new Date(session.createdAt).toLocaleString()}
                 </p>
-
-                {session.lastUsedAt && (
-                  <p className="text-sm text-gray-400">
-                    Last used:{" "}
-                    {new Date(session.lastUsedAt).toLocaleString()}
-                  </p>
-                )}
+{session.lastUsedAt && (
+  <p className="text-sm text-gray-400">
+    Last used: {getTimeAgo(session.lastUsedAt)}
+  </p>
+)}
 
     <button
       onClick={() => onLogoutSession(session.sessionId)}
       type="button"
-      className="rounded-lg bg-red-500 px-5 py-2 font-semibold transition hover:bg-red-600"
+      className="rounded-lg bg-red-500 px-5 py-2 mt-3 font-semibold transition hover:bg-red-600"
     >
       Logout this session
     </button>

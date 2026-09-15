@@ -78,6 +78,7 @@ return response;
 
    refreshTokenCheck.revokedAt = currentDate;
 
+
 await refreshTokenCheck.save()
 
 const newRotateRefreshToken = new RefreshToken({
@@ -85,7 +86,9 @@ const newRotateRefreshToken = new RefreshToken({
     sessionExpiresAt:refreshTokenCheck.sessionExpiresAt,
     userId:refreshTokenCheck.userId,
     tokenHash:newHashedRefreshToken,
-    sessionId:refreshTokenCheck.sessionId
+    sessionId:refreshTokenCheck.sessionId,
+    lastUsedAt:currentDate
+    
 
 })
 
