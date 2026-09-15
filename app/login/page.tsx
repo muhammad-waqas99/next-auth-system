@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
   export default function Login() {
 
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-    
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
         const router = useRouter()
       const [user, setUser] = useState<LoginForm>({
         email:"",
@@ -28,6 +28,9 @@ import toast from "react-hot-toast";
     const onLogin = async (e: React.SyntheticEvent<HTMLFormElement>) => {
 
         e.preventDefault();
+        if (isLoggingIn) return;
+
+setIsLoggingIn(true)
         setFormErrors({})
           const fieldError: Record<string ,string>= {} 
           const result = loginSchema.safeParse(user)
@@ -58,6 +61,8 @@ import toast from "react-hot-toast";
   error.response?.data?.message ||
     "Something went wrong"
 );
+      }finally{
+        setIsLoggingIn(false)
       }
     };
     
@@ -117,8 +122,8 @@ import toast from "react-hot-toast";
 
           <Link href={'/forget-password'} className="w-full px-8 text-sm text-blue-500 hover:underline text-right" >ForgetPassword?</Link>
           <div className="px-8 w-full mt-4">
-            <button type="submit" className="w-full  py-3 rounded-lg  text-black  font-bold text-lg bg-yellow-400 hover:bg-yellow-500 ">
-              Login
+            <button disabled={isLoggingIn} type="submit" className="w-full  py-3 rounded-lg  text-black  font-bold text-lg bg-yellow-400 hover:bg-yellow-500 ">
+               {isLoggingIn ? "Logging in..." : "Login"}
             </button>
           </div>
           <p className="text-sm  text-center   w-full text-[#9A9A9A] ">
@@ -129,5 +134,6 @@ import toast from "react-hot-toast";
           </p>
         </form>
       </div>
+
     );
   }
