@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from "next/server";
 
 export function proxy(request: NextRequest) {
@@ -13,14 +12,17 @@ export function proxy(request: NextRequest) {
     path === "/reset-password";
 
   const accessToken = request.cookies.get("accessToken")?.value;
+  const refreshToken = request.cookies.get("refreshToken")?.value;
 
-  if (isPublicPath && accessToken) {
+
+  if (isPublicPath && accessToken && refreshToken) {
     return NextResponse.redirect(
       new URL("/profile", request.nextUrl)
     );
   }
 
-  if (!isPublicPath && !accessToken) {
+
+  if (!isPublicPath && (!accessToken || !refreshToken)) {
     return NextResponse.redirect(
       new URL("/login", request.nextUrl)
     );
@@ -29,18 +31,16 @@ export function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
-export const config={
-matcher: [
-  "/",
-  "/login",
-  "/signup",
-  "/profile",
-  "/verify-email",
-  "/verify-email-sent",
-  "/change-password",
-  "/forget-password",
-  "/reset-password"
-]
-}
-
-
+export const config = {
+  matcher: [
+    "/",
+    "/login",
+    "/signup",
+    "/profile",
+    "/verify-email",
+    "/verify-email-sent",
+    "/change-password",
+    "/forget-password",
+    "/reset-password",
+  ],
+};

@@ -26,7 +26,18 @@ await connectToDB()
 
 
  if(!refreshTokenCheck){
-    return NextResponse.json({success : false , message: "invalid Refresh Token "} , {status:401})
+const response = NextResponse.json(
+  {
+    success: false,
+    message: "Invalid or expired refresh token",
+  },
+  { status: 401 }
+);
+
+response.cookies.delete("accessToken");
+response.cookies.delete("refreshToken");
+
+return response;
  }
 
  const revokedAt =refreshTokenCheck.revokedAt
@@ -35,7 +46,18 @@ const currentDate = new Date()
 
  if(revokedAt !== null || refreshTokenCheck.expiresAt < currentDate || refreshTokenCheck.sessionExpiresAt < currentDate){
        
-    return NextResponse.json({success : false , message: "refresh token is expired"} , {status:401})
+  const response = NextResponse.json(
+  {
+    success: false,
+    message: "Invalid or expired refresh token",
+  },
+  { status: 401 }
+);
+
+response.cookies.delete("accessToken");
+response.cookies.delete("refreshToken");
+
+return response;
  
  }
 

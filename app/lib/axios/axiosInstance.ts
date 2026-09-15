@@ -16,16 +16,22 @@ axiosInstance.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as RetryRequestConfig;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+  error.response?.status === 401 &&
+  !originalRequest._retry &&
+  originalRequest.url !== "/api/auth/refresh" &&
+  originalRequest.url !== "/api/auth/logout"
+) {
       originalRequest._retry = true;
 
       try {
         await axiosInstance.post("/api/auth/refresh");
 
         return axiosInstance(originalRequest);
-      } catch (refreshError) {
-        return Promise.reject(refreshError);
-      }
+      } catch (refreshError: any) {
+  console.log("REFRESH FAILED:", refreshError.response?.status);
+  return Promise.reject(refreshError);
+}
     }
 
     return Promise.reject(error);

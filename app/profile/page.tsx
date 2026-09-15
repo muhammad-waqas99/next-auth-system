@@ -32,10 +32,14 @@ const getUserDetails = async () => {
       isVerified,
       authProvider,
     });
-  } catch (error: any) {
-    console.log("Something went wrong:", error.message);
+  }catch (error: any) {
+  console.log("PROFILE CATCH:", error.response?.status);
+  console.log("PROFILE ERROR:", error.message);
+
+  if (error.response?.status === 401) {
     router.push("/login");
   }
+}
 };
 
     getUserDetails();
@@ -44,6 +48,15 @@ const getUserDetails = async () => {
   const onLogout = async () => {
     try {
       await axios.post("/api/auth/logout");
+
+      router.push("/login");
+    } catch (error: any) {
+      console.log("Logout failed:", error.message);
+    }
+  };
+  const onLogoutAll = async () => {
+    try {
+      await axios.post("/api/auth/logout-all");
 
       router.push("/login");
     } catch (error: any) {
@@ -88,6 +101,13 @@ const getUserDetails = async () => {
           className="rounded-lg bg-red-500 px-5 py-2 font-semibold transition hover:bg-red-600"
         >
           Logout
+        </button>
+        <button
+          onClick={onLogoutAll}
+          type="button"
+          className="rounded-lg bg-red-500 px-5 py-2 font-semibold transition hover:bg-red-600"
+        >
+          Logout All
         </button>
 
       </nav>
