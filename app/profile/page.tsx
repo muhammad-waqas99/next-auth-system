@@ -272,13 +272,21 @@ const onLogoutSession = async (sessionId: string) => {
         </div>
 
 
-{!user.twoFactorStatus && (
+{!user.twoFactorStatus ?(
   <button
     onClick={() => router.push("/two-factor/setup")}
     type="button"
     className="mt-4 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold transition hover:bg-blue-600"
   >
     Enable 2FA
+  </button>
+) :(
+  <button
+    onClick={() => router.push("/two-factor/disable")}
+    type="button"
+    className="mt-4 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold transition hover:bg-blue-600"
+  >
+    Disable 2FA
   </button>
 )}
 
