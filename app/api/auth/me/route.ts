@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import connectToDB from "@/app/dbconfig/db";
 import { verifyAccessToken } from "@/app/lib/auth/token";
+import BackupCode from "@/app/models/backupCode.model";
 
 interface TokenPayload {
   id: string;
@@ -43,12 +44,28 @@ export async function GET(request: NextRequest) {
         { status: 404 }
       );
     }
+      
+let backupCodesRemaining  =0
+if(currentUser.twoFactorEnabled){
+  const backupCodes =await BackupCode.findOne({userId :userID})
+
+  if(!backupCodes){
+    backupCodesRemaining =0
+  }else{
+   backupCodesRemaining = backupCodes?.codes.filter((code)=>{
+   return  code.usedAt ===null
+  }).length
+  }
+
+
+}
 
     return NextResponse.json(
       {
         success: true,
         message: "Current user details fetched successfully",
         user: currentUser,
+        backupCodesRemaining
       },
       { status: 200 }
     );

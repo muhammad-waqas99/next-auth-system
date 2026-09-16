@@ -33,7 +33,8 @@ export default function Profile() {
     email: "",
     isVerified: false,
     authProvider: "",
-    twoFactorStatus: false
+    twoFactorStatus: false,
+    backupCodesRemaining:0
   });
 
   const [sessions, setSessions] = useState<any[]>([]);
@@ -51,13 +52,15 @@ export default function Profile() {
         const isVerified = response.data.user.isVerified;
         const authProvider = response.data.user.authProvider.toString();
         const twoFactorStatus = response.data.user.twoFactorEnabled
+        const backupCodesRemaining = response.data.backupCodesRemaining
 
         setUser({
           name,
           email,
           isVerified,
           authProvider,
-          twoFactorStatus
+          twoFactorStatus,
+          backupCodesRemaining
 
         });
 
@@ -281,6 +284,9 @@ const onLogoutSession = async (sessionId: string) => {
     Enable 2FA
   </button>
 ) :(
+  <div>
+
+
   <button
     onClick={() => router.push("/two-factor/disable")}
     type="button"
@@ -288,7 +294,22 @@ const onLogoutSession = async (sessionId: string) => {
   >
     Disable 2FA
   </button>
+
+
+    <div className="mt-4 rounded-lg border border-gray-700 bg-[#1a1a1a] px-4 py-3">
+  <p className="text-sm text-gray-400">
+    Backup Codes
+  </p>
+
+  <p className="mt-1 text-lg font-semibold text-white">
+    {user.backupCodesRemaining} remaining
+  </p>
+</div>
+
+    </div>
+    
 )}
+
 
       </main>
     </div>
