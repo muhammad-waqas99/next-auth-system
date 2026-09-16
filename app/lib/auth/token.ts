@@ -91,3 +91,20 @@ export function hashLoginChallenge(challenge:string){
     throw new Error(`Error in hashLoginChallenge Error :  ${error.message}`)
  }
 }
+export function generateDisableChallenge(){
+ try {
+    const loginChallenge = crypto.randomBytes(32).toString("hex")
+    return loginChallenge
+ } catch (error:any) {
+    throw new Error(`Error in generateLoginChallenge Error :  ${error.message} `)
+ }
+}
+
+export function hashDisableChallenge(challenge:string){
+ try {
+    const hashLoginChallenge = crypto.createHash('sha256').update(challenge).digest("hex")
+    return hashLoginChallenge
+ } catch (error:any) {
+    throw new Error(`Error in hashLoginChallenge Error :  ${error.message}`)
+ }
+}
