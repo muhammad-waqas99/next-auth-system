@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import connectToDB from "@/app/dbconfig/db";
 import RefreshToken from "@/app/models/refreshToken.model";
 import { createAccessToken, generateRefreshToken, generateSessionId, hashRefreshToken } from "@/app/lib/auth/token";
+import { UAParser } from "ua-parser-js";
 
 
 export async function GET(request:NextRequest){
@@ -74,6 +75,15 @@ try {
     }
 
     await connectToDB()
+    const userAgent = request.headers.get("user-agent") ?? "";
+
+const parser = new UAParser(userAgent);
+
+const browser = parser.getBrowser().name || "Unknown";
+const os = parser.getOS().name || "Unknown";
+
+const deviceInfo = parser.getDevice();
+const device = deviceInfo.type || "Desktop";
     const user = await User.findOne({googleId:googleID})
     if(user) {
         user.isVerified=true
@@ -107,14 +117,16 @@ if (user.password !== null) {
 
 
  
- const newRefreshToken = new RefreshToken({
-   userId : user.id,
-   expiresAt:expiryDate,
-   sessionExpiresAt,
-   tokenHash:hashedRefreshToken,
-   sessionId
- })
-
+const newRefreshToken = new RefreshToken({
+  userId: user.id,
+  expiresAt: expiryDate,
+  sessionExpiresAt,
+  tokenHash: hashedRefreshToken,
+  sessionId,
+  os,
+  browser,
+  device,
+});
 
  await newRefreshToken.save()
 
@@ -177,14 +189,16 @@ if (user.password !== null) {
 
 
  
- const newRefreshToken = new RefreshToken({
-   userId : localUser.id,
-   expiresAt:expiryDate,
-   sessionExpiresAt,
-   tokenHash:hashedRefreshToken,
-   sessionId
- })
-
+const newRefreshToken = new RefreshToken({
+  userId: localUser.id,
+  expiresAt: expiryDate,
+  sessionExpiresAt,
+  tokenHash: hashedRefreshToken,
+  sessionId,
+  os,
+  browser,
+  device,
+});
 
  await newRefreshToken.save()
 
@@ -247,15 +261,16 @@ if (user.password !== null) {
 
 
  
- const newRefreshToken = new RefreshToken({
-   userId : newGoogleUser.id,
-   expiresAt:expiryDate,
-   sessionExpiresAt,
-   tokenHash:hashedRefreshToken,
-   sessionId
- })
-
-
+const newRefreshToken = new RefreshToken({
+  userId: newGoogleUser.id,
+  expiresAt: expiryDate,
+  sessionExpiresAt,
+  tokenHash: hashedRefreshToken,
+  sessionId,
+  os,
+  browser,
+  device,
+});
  await newRefreshToken.save()
 
  const response = NextResponse.redirect(

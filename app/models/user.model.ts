@@ -13,6 +13,10 @@ interface IUser {
   passwordResetAt: Date | null;
   googleId?: string;
   authProvider: "local" | "google" | "both";
+  twoFactorEnabled:boolean;
+  twoFactorSecret:string |null;
+  pendingTwoFactorSecret: string |null;
+  pendingTwoFactorExpiresAt:Date |null;
 }
 
 const userSchema = new mongoose.Schema<IUser>({
@@ -74,6 +78,24 @@ const userSchema = new mongoose.Schema<IUser>({
     required: true,
     enum: ["local", "google", "both"],
   },
+
+  twoFactorEnabled:{
+    type:Boolean,
+    default:false
+  },
+  twoFactorSecret:{
+    type:String,
+    default:null
+  }, 
+  pendingTwoFactorSecret:{
+    type:String,
+    default:null
+  },
+  pendingTwoFactorExpiresAt: {
+  type: Date,
+  default: null,
+}
+  
 });
 
 const User = mongoose.model<IUser>("User", userSchema);

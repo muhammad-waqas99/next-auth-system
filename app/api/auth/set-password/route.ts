@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+
 import connectToDB from "@/app/dbconfig/db";
 import User from "@/app/models/user.model";
-import bcrypt from "bcryptjs";
-import { setPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 
-interface TokenPayload {
+import { setPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
+import { verifyAccessToken } from "@/app/lib/auth/token";
+
+interface AccessTokenPayload {
   id: string;
-  email: string;
+  type: "access";
 }
 
 export async function POST(request: NextRequest) {
@@ -28,9 +30,10 @@ export async function POST(request: NextRequest) {
 
     const { newPassword } = result.data;
 
-    const token = request.cookies.get("token")?.value;
+  
+    const accessToken = request.cookies.get("accessToken")?.value;
 
-    if (!token) {
+    if (!accessToken) {
       return NextResponse.json(
         {
           success: false,
@@ -40,16 +43,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const decodedToken = jwt.verify(
-      token,
-      process.env.JWT_SECRET!
-    ) as TokenPayload;
+  
+    let decodedToken: AccessTokenPayload;
 
-    if (!decodedToken.id) {
+    try {
+      decodedToken = verifyAccessToken(
+        accessToken
+      ) as AccessTokenPayload;
+    } catch {
       return NextResponse.json(
         {
           success: false,
-          message: "Invalid token",
+          message: "Invalid or expired access token",
+        },
+        { status: 401 }
+      );
+    }
+
+    if (!decodedToken.id || decodedToken.type !== "access") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid access token",
         },
         { status: 401 }
       );
