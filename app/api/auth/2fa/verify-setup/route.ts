@@ -119,12 +119,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isValid = await verify({
-      secret: user.pendingTwoFactorSecret,
-      token: otp,
-    });
+    const result = await verify({
+  secret: user.pendingTwoFactorSecret,
+  token: otp,
+   epochTolerance: 30,
+});
 
-    if (!isValid) {
+
+
+if (!result.valid) {
       return NextResponse.json(
         {
           success: false,

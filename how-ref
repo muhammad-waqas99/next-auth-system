@@ -1,0 +1,10 @@
+[33m16cee8f[m feat: add 2FA setup flow and migrate set password auth
+[33mbe70761[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;32mbackup-before-large-file-cleanup[m[33m)[m feat: add 2FA setup flow and migrate set password auth
+[33m0e03978[m feat: add 2FA setup flow and migrate set password auth
+[33m5d65f40[m feat(auth): add device and browser session details
+[33m4c57db6[m feat(auth): track session last used time
+[33ma46b0fe[m feat(auth): add specific session logout
+[33me72c5f2[m feat(auth): add refresh queue and active sessions UI
+[33mac51dfd[m feat(auth): add logout from all sessions
+[33m07aa068[m feat(auth): add axios interceptor for token refresh
+[33m50fb59e[m feat(auth): integrate access and refresh tokens with Google OAuth

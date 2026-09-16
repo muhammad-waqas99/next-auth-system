@@ -1,50 +1,44 @@
-
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import User from "@/app/models/user.model";
-
 import connectToDB from "@/app/dbconfig/db";
-import { loginSchema } from "@/app/lib/validationSchema/auth.schema";
+import User from "@/app/models/user.model";
+import LoginChallenge from "@/app/models/loginChallenge.model";
+import RefreshToken from "@/app/models/refreshToken.model";
 import {
   createAccessToken,
   generateRefreshToken,
   generateSessionId,
   hashRefreshToken,
-  generateLoginChallenge,
   hashLoginChallenge,
 } from "@/app/lib/auth/token";
-import RefreshToken from "@/app/models/refreshToken.model";
-import LoginChallenge from "@/app/models/loginChallenge.model";
 import { UAParser } from "ua-parser-js";
+import { verify } from "otplib";
 
 interface ReqBody {
-  email: string;
-  password: string;
+  challenge: string;
+  otp: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const reqBody: ReqBody = await request.json();
 
-    const result = loginSchema.safeParse(reqBody);
+    const { challenge, otp } = reqBody;
 
-    if (!result.success) {
+    if (!challenge || !otp) {
       return NextResponse.json(
         {
           success: false,
-          message: result.error.issues[0].message,
+          message: "Challenge and OTP are required",
         },
         { status: 400 }
       );
     }
 
-    const { email, password } = result.data;
-
-    if (!email || !password) {
+    if (!/^\d{6}$/.test(otp)) {
       return NextResponse.json(
         {
           success: false,
-          message: "All fields are required",
+          message: "OTP must be 6 digits",
         },
         { status: 400 }
       );
@@ -52,77 +46,82 @@ export async function POST(request: NextRequest) {
 
     await connectToDB();
 
-    const user = await User.findOne({ email });
+    const challengeHash = hashLoginChallenge(challenge);
 
-    if (user && user.authProvider === "google") {
-      return NextResponse.json({
-        success: false,
-        message: "Password login is not available for this account.",
-      });
+    const loginChallenge = await LoginChallenge.findOne({
+      challengeHash,
+    });
+
+    if (!loginChallenge) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid login challenge",
+        },
+        { status: 401 }
+      );
     }
+
+    if (loginChallenge.usedAt) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Login challenge has already been used",
+        },
+        { status: 401 }
+      );
+    }
+
+    if (loginChallenge.expiresAt < new Date()) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Login challenge has expired",
+        },
+        { status: 401 }
+      );
+    }
+
+    const user = await User.findById(loginChallenge.userId);
 
     if (!user) {
       return NextResponse.json(
         {
           success: false,
-          message: "Invalid email or password",
+          message: "User not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    if (!user.twoFactorEnabled || !user.twoFactorSecret) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Two-factor authentication is not enabled",
+        },
+        { status: 400 }
+      );
+    }
+
+    const result = await verify({
+      secret: user.twoFactorSecret,
+      token: otp,
+       epochTolerance: 30,
+    });
+
+    if (!result.valid) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid OTP",
         },
         { status: 401 }
       );
     }
 
-    if (!user.password) {
-      return NextResponse.json({
-        success: false,
-        message: "Password login is not available for this account.",
-      });
-    }
-
-    const checkPassword = await bcrypt.compare(password, user.password);
-
-    if (!checkPassword) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid email or password",
-        },
-        { status: 401 }
-      );
-    }
-
-    if (!user.isVerified) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "Please verify your email before logging in. Check your inbox for the verification link.",
-        },
-        { status: 403 }
-      );
-    }
-
-    if (user.twoFactorEnabled) {
-      const loginChallenge = generateLoginChallenge();
-      const challengeHash = hashLoginChallenge(loginChallenge);
-
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-      await LoginChallenge.create({
-        userId: user.id,
-        challengeHash,
-        expiresAt,
-      });
-
-      return NextResponse.json(
-        {
-          success: true,
-          requiresTwoFactor: true,
-          challenge: loginChallenge,
-          message: "Two-factor authentication required",
-        },
-        { status: 200 }
-      );
-    }
+    loginChallenge.usedAt = new Date();
+    await loginChallenge.save();
 
     const accessPayload = {
       id: user.id,
@@ -136,6 +135,7 @@ export async function POST(request: NextRequest) {
     const hashedRefreshToken = hashRefreshToken(refreshToken);
 
     const currentDate = Date.now();
+
     const expiryDate = new Date(currentDate + 6.048e8);
 
     const sessionExpiresAt = new Date(currentDate + 2.592e9);
@@ -166,7 +166,10 @@ export async function POST(request: NextRequest) {
     await newRefreshToken.save();
 
     const response = NextResponse.json(
-      { success: true, message: "Logged in successfully" },
+      {
+        success: true,
+        message: "Logged in successfully",
+      },
       { status: 200 }
     );
 
@@ -188,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error: any) {
-    console.log("Login error:", error.message);
+    console.log("Verify login 2FA error:", error.message);
 
     return NextResponse.json(
       {
@@ -199,4 +202,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

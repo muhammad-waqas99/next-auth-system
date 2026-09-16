@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 import connectToDB from "@/app/dbconfig/db";
 import RefreshToken from "@/app/models/refreshToken.model";
-import { createAccessToken, generateRefreshToken, generateSessionId, hashRefreshToken } from "@/app/lib/auth/token";
+import { createAccessToken, generateLoginChallenge, generateRefreshToken, generateSessionId, hashLoginChallenge, hashRefreshToken } from "@/app/lib/auth/token";
 import { UAParser } from "ua-parser-js";
+import LoginChallenge from "@/app/models/loginChallenge.model";
 
 
 export async function GET(request:NextRequest){
@@ -96,7 +97,25 @@ if (user.password !== null) {
 
         await user.save()
 
+if (user.twoFactorEnabled) {
+    const loginChallenge = generateLoginChallenge();
+    const challengeHash = hashLoginChallenge(loginChallenge);
 
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    await LoginChallenge.create({
+        userId: user.id,
+        challengeHash,
+        expiresAt,
+    });
+
+    return NextResponse.redirect(
+        new URL(
+            `/two-factor/login?challenge=${loginChallenge}&message=google-login`,
+            request.url
+        )
+    );
+}
   const accessPayload = {
     id: user.id,
     type:"access"
@@ -167,7 +186,25 @@ const newRefreshToken = new RefreshToken({
         await localUser.save()
 
 
-      
+      if (localUser.twoFactorEnabled) {
+    const loginChallenge = generateLoginChallenge();
+    const challengeHash = hashLoginChallenge(loginChallenge);
+
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    await LoginChallenge.create({
+        userId: localUser.id,
+        challengeHash,
+        expiresAt,
+    });
+
+    return NextResponse.redirect(
+        new URL(
+            `/two-factor/login?challenge=${loginChallenge}&message=google-linked`,
+            request.url
+        )
+    );
+} 
       
   const accessPayload = {
     id: localUser.id,

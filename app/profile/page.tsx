@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { axiosInstance } from "../lib/axios/axiosInstance";
-import TwoFactorSetup from "../two-factor/setup/page";
+
 
 
 export default function Profile() {
@@ -33,7 +33,7 @@ export default function Profile() {
     email: "",
     isVerified: false,
     authProvider: "",
-    twoFactorStatus:"false"
+    twoFactorStatus: false
   });
 
   const [sessions, setSessions] = useState<any[]>([]);
@@ -272,13 +272,15 @@ const onLogoutSession = async (sessionId: string) => {
         </div>
 
 
-{!TwoFactorSetup  && <button
-  onClick={() => router.push("/two-factor/setup")}
-  type="button"
-  className="rounded-lg bg-blue-500 mt-4 px-4 py-2 text-sm font-semibold transition hover:bg-blue-600"
->
-  Enable 2FA
-</button>}
+{!user.twoFactorStatus && (
+  <button
+    onClick={() => router.push("/two-factor/setup")}
+    type="button"
+    className="mt-4 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold transition hover:bg-blue-600"
+  >
+    Enable 2FA
+  </button>
+)}
 
       </main>
     </div>

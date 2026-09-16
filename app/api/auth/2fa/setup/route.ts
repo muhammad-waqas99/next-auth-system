@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     const issuer = process.env.ISSUER!;
 
     const secret = generateSecret();
-         
+      
   
     const pendingTwoFactorExpiresAt = new Date(
       Date.now() + 10 * 60 * 1000
@@ -143,6 +143,8 @@ export async function POST(request: NextRequest) {
       label: userEmail,
       secret,
     });
+
+   
 
     const qrCode = await QRCode.toDataURL(uri);
 

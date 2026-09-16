@@ -54,6 +54,14 @@ setIsLoggingIn(true)
     
         console.log(response.data);
     toast.success(response.data.message);
+
+    if (response.data.requiresTwoFactor) {
+      toast.success(response.data.message);
+  router.push(
+    `/two-factor/login?challenge=${response.data.challenge}`
+  );
+  return;
+}
         router.push("/profile");
       } catch (error:any) {
         console.log("Something went wrong");
