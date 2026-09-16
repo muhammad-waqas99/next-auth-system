@@ -108,3 +108,31 @@ export function hashDisableChallenge(challenge:string){
     throw new Error(`Error in hashLoginChallenge Error :  ${error.message}`)
  }
 }
+
+export function generateBackupCodes() {
+  try {
+    const codes: string[] = [];
+    const hashes: string[] = [];
+
+    for (let i = 0; i < 8; i++) {
+      const code = crypto.randomInt(1000000000, 10000000000).toString();
+
+      const codeHash = crypto
+        .createHash("sha256")
+        .update(code)
+        .digest("hex");
+
+      codes.push(code);
+      hashes.push(codeHash);
+    }
+
+    return {
+      codes,
+      hashes,
+    };
+  } catch (error: any) {
+    throw new Error(
+      `Error in generateBackupCodes Error: ${error.message}`
+    );
+  }
+}

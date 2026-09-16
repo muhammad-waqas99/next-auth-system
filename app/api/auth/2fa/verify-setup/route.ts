@@ -1,5 +1,6 @@
 import connectToDB from "@/app/dbconfig/db";
-import { hashRefreshToken } from "@/app/lib/auth/token";
+import { generateBackupCodes, hashRefreshToken } from "@/app/lib/auth/token";
+import BackupCode from "@/app/models/backupCode.model";
 import RefreshToken from "@/app/models/refreshToken.model";
 import User from "@/app/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
@@ -136,8 +137,17 @@ if (!result.valid) {
         { status: 401 }
       );
     }
+const { codes, hashes } = generateBackupCodes();
 
+await BackupCode.create({
+  userId: user._id,
+  codes: hashes.map((codeHash) => ({
+    codeHash,
+    usedAt: null,
+  })),
+});
 
+ 
     user.twoFactorSecret = user.pendingTwoFactorSecret;
     user.twoFactorEnabled = true;
 
@@ -151,6 +161,7 @@ if (!result.valid) {
       {
         success: true,
         message: "2FA enabled successfully",
+        backupCodes:codes
       },
       { status: 200 }
     );

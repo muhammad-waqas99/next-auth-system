@@ -1,3 +1,4 @@
+
 "use client";
 
 import axios from "axios";
@@ -14,10 +15,14 @@ export default function TwoFactorSetup() {
   const [qrImg, setQrImg] = useState("");
   const [otpSecret, setOtpSecret] = useState("");
 
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const startSetup = async (e: React.SyntheticEvent<HTMLFormElement>) => {
+  const startSetup = async (
+    e: React.SyntheticEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
 
     if (!password) {
@@ -72,9 +77,11 @@ export default function TwoFactorSetup() {
         }
       );
 
-      toast.success(response.data.message);
+      if (response.data.success) {
+        setBackupCodes(response.data.backupCodes || []);
 
-      router.push("/profile");
+        toast.success("2FA enabled successfully");
+      }
     } catch (error: any) {
       toast.error(
         error.response?.data?.message ||
@@ -85,113 +92,189 @@ export default function TwoFactorSetup() {
     }
   };
 
+  const downloadBackupCodes = () => {
+    const content = `Backup Codes\n\n${backupCodes.join("\n")}`;
+
+    const blob = new Blob([content], {
+      type: "text/plain",
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "backup-codes.txt";
+
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <main className="min-h-screen bg-[#111111] text-white flex items-center justify-center px-4">
       <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#181818] p-8">
 
-        <h1 className="text-2xl font-bold text-center">
-          Enable Two-Factor Authentication
-        </h1>
-
-        {!qrImg ? (
+        {!backupCodes.length ? (
           <>
-            <p className="mt-3 text-center text-sm text-zinc-400">
-              Enter your current password to start setting up
-              two-factor authentication.
-            </p>
+            <h1 className="text-2xl font-bold text-center">
+              Enable Two-Factor Authentication
+            </h1>
 
-            <form onSubmit={startSetup} className="mt-8">
-              <label
-                htmlFor="password"
-                className="block text-sm text-zinc-300 mb-2"
-              >
-                Password
-              </label>
+            {!qrImg ? (
+              <>
+                <p className="mt-3 text-center text-sm text-zinc-400">
+                  Enter your current password to start setting up
+                  two-factor authentication.
+                </p>
 
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={password}
-                placeholder="Enter your password"
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white outline-none focus:border-white"
-              />
+                <form onSubmit={startSetup} className="mt-8">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm text-zinc-300 mb-2"
+                  >
+                    Password
+                  </label>
 
-              <button
-                type="submit"
-                disabled={isSettingUp}
-                className="mt-5 w-full rounded-lg bg-blue-500 px-4 py-3 font-semibold transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSettingUp
-                  ? "Verifying password..."
-                  : "Continue"}
-              </button>
-            </form>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    value={password}
+                    placeholder="Enter your password"
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white outline-none focus:border-white"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={isSettingUp}
+                    className="mt-5 w-full rounded-lg bg-blue-500 px-4 py-3 font-semibold transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSettingUp
+                      ? "Verifying password..."
+                      : "Continue"}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <p className="mt-3 text-center text-sm text-zinc-400">
+                  Scan this QR code using Google Authenticator or
+                  another authenticator app.
+                </p>
+
+                <div className="mt-6 flex justify-center rounded-xl bg-white p-5">
+                  <img
+                    src={qrImg}
+                    alt="2FA QR Code"
+                    className="h-56 w-56"
+                  />
+                </div>
+
+                <p className="mt-5 text-center text-sm text-zinc-400">
+                  After scanning the QR code, enter the 6-digit code
+                  generated by your authenticator app.
+                </p>
+
+                <form onSubmit={verifySetup} className="mt-6">
+                  <label
+                    htmlFor="otp"
+                    className="block text-sm text-zinc-300 mb-2"
+                  >
+                    Authentication Code
+                  </label>
+
+                  <input
+                    type="text"
+                    id="otp"
+                    name="otp"
+                    value={otp}
+                    maxLength={6}
+                    inputMode="numeric"
+                    placeholder="Enter 6-digit code"
+                    onChange={(e) =>
+                      setOtp(e.target.value.replace(/\D/g, ""))
+                    }
+                    className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white outline-none focus:border-white tracking-widest text-center"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={isVerifying}
+                    className="mt-5 w-full rounded-lg bg-green-500 px-4 py-3 font-semibold transition hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isVerifying
+                      ? "Verifying..."
+                      : "Verify & Enable 2FA"}
+                  </button>
+                </form>
+              </>
+            )}
+
+            <button
+              type="button"
+              onClick={() => router.push("/profile")}
+              className="mt-4 w-full rounded-lg border border-zinc-700 px-4 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800"
+            >
+              Cancel
+            </button>
           </>
         ) : (
           <>
+            <h1 className="text-2xl font-bold text-center">
+              2FA Enabled Successfully
+            </h1>
+
             <p className="mt-3 text-center text-sm text-zinc-400">
-              Scan this QR code using Google Authenticator or
-              another authenticator app.
+              Save these backup codes somewhere safe. Each code can
+              only be used once.
             </p>
 
-            <div className="mt-6 flex justify-center rounded-xl bg-white p-5">
-              <img
-                src={qrImg}
-                alt="2FA QR Code"
-                className="h-56 w-56"
-              />
+            <div className="mt-6 rounded-xl border border-zinc-700 bg-zinc-900 p-5">
+              <div className="grid grid-cols-2 gap-3">
+                {backupCodes.map((code) => (
+                  <div
+                    key={code}
+                    className="rounded-lg bg-zinc-800 px-3 py-3 text-center font-mono tracking-wider"
+                  >
+                    {code}
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <p className="mt-5 text-center text-sm text-zinc-400">
-              After scanning the QR code, enter the 6-digit code
-              generated by your authenticator app.
-            </p>
+            <div className="mt-5 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-300">
+              <p className="font-semibold">
+                Important
+              </p>
 
-            <form onSubmit={verifySetup} className="mt-6">
-              <label
-                htmlFor="otp"
-                className="block text-sm text-zinc-300 mb-2"
-              >
-                Authentication Code
-              </label>
+              <p className="mt-1">
+                These backup codes will only be shown now. Save or
+                download them before leaving this page.
+              </p>
+            </div>
 
-              <input
-                type="text"
-                id="otp"
-                name="otp"
-                value={otp}
-                maxLength={6}
-                inputMode="numeric"
-                placeholder="Enter 6-digit code"
-                onChange={(e) =>
-                  setOtp(e.target.value.replace(/\D/g, ""))
-                }
-                className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white outline-none focus:border-white tracking-widest text-center"
-              />
+            <button
+              type="button"
+              onClick={downloadBackupCodes}
+              className="mt-5 w-full rounded-lg bg-blue-500 px-4 py-3 font-semibold transition hover:bg-blue-600"
+            >
+              Download Backup Codes
+            </button>
 
-              <button
-                type="submit"
-                disabled={isVerifying}
-                className="mt-5 w-full rounded-lg bg-green-500 px-4 py-3 font-semibold transition hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isVerifying
-                  ? "Verifying..."
-                  : "Verify & Enable 2FA"}
-              </button>
-            </form>
+            <button
+              type="button"
+              onClick={() => router.push("/profile")}
+              className="mt-3 w-full rounded-lg border border-zinc-700 px-4 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800"
+            >
+              Continue to Profile
+            </button>
           </>
         )}
-
-        <button
-          type="button"
-          onClick={() => router.push("/profile")}
-          className="mt-4 w-full rounded-lg border border-zinc-700 px-4 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800"
-        >
-          Cancel
-        </button>
       </div>
     </main>
   );
 }
+
