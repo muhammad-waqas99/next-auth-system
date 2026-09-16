@@ -1,6 +1,4 @@
-
 "use client";
-
 
 import axios from "axios";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -54,6 +52,15 @@ export default function TwoFactorLogin() {
     }
   };
 
+  const useBackupCode = () => {
+    if (!challenge) {
+      toast.error("Invalid login challenge");
+      return;
+    }
+
+    router.push(`/two-factor/backup-login?challenge=${challenge}`);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md">
@@ -72,7 +79,9 @@ export default function TwoFactorLogin() {
               inputMode="numeric"
               maxLength={6}
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+              onChange={(e) =>
+                setOtp(e.target.value.replace(/\D/g, ""))
+              }
               placeholder="Enter 6-digit OTP"
               className="w-full rounded-lg border px-4 py-3 outline-none"
               disabled={isVerifying}
@@ -89,6 +98,15 @@ export default function TwoFactorLogin() {
           </button>
 
           <button
+            onClick={useBackupCode}
+            type="button"
+            disabled={isVerifying}
+            className="mt-3 w-full text-sm disabled:opacity-50"
+          >
+            Use Backup Code
+          </button>
+
+          <button
             onClick={() => router.push("/login")}
             type="button"
             disabled={isVerifying}
@@ -101,4 +119,3 @@ export default function TwoFactorLogin() {
     </div>
   );
 }
-
