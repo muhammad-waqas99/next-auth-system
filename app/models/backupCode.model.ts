@@ -2,7 +2,7 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IBackupCode extends Document {
   userId: mongoose.Types.ObjectId;
-
+ lastRegeneratedAt :Date | null;
   codes: {
     codeHash: string;
     usedAt: Date | null;
@@ -34,6 +34,11 @@ const backupCodeSchema = new Schema<IBackupCode>(
         },
       },
     ],
+
+    lastRegeneratedAt :{
+      type:Date,
+      default:null
+    }
   },
   {
     timestamps: true,

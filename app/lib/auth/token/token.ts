@@ -108,6 +108,23 @@ export function hashDisableChallenge(challenge:string){
     throw new Error(`Error in hashLoginChallenge Error :  ${error.message}`)
  }
 }
+export function generateRegenerateChallenge(){
+ try {
+    const regenerateChallenge = crypto.randomBytes(32).toString("hex")
+    return regenerateChallenge
+ } catch (error:any) {
+    throw new Error(`Error in generateRegenerateChallenge Error :  ${error.message} `)
+ }
+}
+
+export function hashRegenerateChallenge(challenge:string){
+ try {
+    const hashRegenerateChallenge = crypto.createHash('sha256').update(challenge).digest("hex")
+    return hashRegenerateChallenge
+ } catch (error:any) {
+    throw new Error(`Error in hashRegenerateChallenge Error :  ${error.message}`)
+ }
+}
 
 export function generateBackupCodes() {
   try {

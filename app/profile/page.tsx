@@ -312,6 +312,14 @@ const onLogoutSession = async (sessionId: string) => {
 
 
       </main>
+
+        <button
+    onClick={() => router.push("/two-factor/disable")}
+    type="button"
+    className="mt-4 rounded-lg bg-blue-500 px-4 py-2 m-5 text-sm font-semibold transition hover:bg-blue-600"
+  >
+    Regenerate Backup Codes
+  </button>
     </div>
   );
 }
