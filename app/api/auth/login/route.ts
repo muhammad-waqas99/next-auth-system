@@ -1,21 +1,13 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import User from "@/app/models/user.model";
 
 import connectToDB from "@/app/dbconfig/db";
 import { loginSchema } from "@/app/lib/validationSchema/auth.schema";
-import {
-  createAccessToken,
-  generateRefreshToken,
-  generateSessionId,
-  hashRefreshToken,
-  generateLoginChallenge,
-  hashLoginChallenge,
-} from "@/app/lib/auth/token/token";
-import RefreshToken from "@/app/models/refreshToken.model";
-import LoginChallenge from "@/app/models/loginChallenge.model";
-import { UAParser } from "ua-parser-js";
+
+import { createLoginChallenge } from "@/app/lib/auth/login/createLoginChallenge";
+import { createLoginSession } from "@/app/lib/auth/login/createLoginSession";
+import { getDeviceInfo } from "@/app/lib/auth/device/getDeviceInfo";
 
 interface ReqBody {
   email: string;
@@ -101,17 +93,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+
     if (user.twoFactorEnabled) {
-      const loginChallenge = generateLoginChallenge();
-      const challengeHash = hashLoginChallenge(loginChallenge);
-
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-      await LoginChallenge.create({
-        userId: user.id,
-        challengeHash,
-        expiresAt,
-      });
+      const loginChallenge = await createLoginChallenge(user.id);
 
       return NextResponse.json(
         {
@@ -124,49 +108,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const accessPayload = {
-      id: user.id,
-      type: "access",
-    };
 
-    const accessToken = createAccessToken(accessPayload);
 
-    const refreshToken = generateRefreshToken();
+    const { browser, os, device } = getDeviceInfo(request);
 
-    const hashedRefreshToken = hashRefreshToken(refreshToken);
-
-    const currentDate = Date.now();
-    const expiryDate = new Date(currentDate + 6.048e8);
-
-    const sessionExpiresAt = new Date(currentDate + 2.592e9);
-
-    const sessionId = generateSessionId();
-
-    const userAgent = request.headers.get("user-agent") ?? "";
-
-    const parser = new UAParser(userAgent);
-
-    const browser = parser.getBrowser().name || "Unknown";
-    const os = parser.getOS().name || "Unknown";
-
-    const deviceInfo = parser.getDevice();
-    const device = deviceInfo.type || "Desktop";
-
-    const newRefreshToken = new RefreshToken({
+    const { accessToken, refreshToken } = await createLoginSession({
       userId: user.id,
-      expiresAt: expiryDate,
-      sessionExpiresAt,
-      tokenHash: hashedRefreshToken,
-      sessionId,
-      os,
       browser,
+      os,
       device,
     });
 
-    await newRefreshToken.save();
+
 
     const response = NextResponse.json(
-      { success: true, message: "Logged in successfully" },
+      {
+        success: true,
+        message: "Logged in successfully",
+      },
       { status: 200 }
     );
 
@@ -199,4 +158,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

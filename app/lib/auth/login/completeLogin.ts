@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import User from "@/app/models/user.model";
 
-import { createLoginChallenge } from "./create-login-challenge";
-import { createLoginSession } from "./create-login-session";
-import { getDeviceInfo } from "../device/get-device-info";
+import { createLoginChallenge } from "./createLoginChallenge";
+import { createLoginSession } from "./createLoginSession";
+import { getDeviceInfo } from "../device/getDeviceInfo";
 
 interface CompleteLoginParams {
   user: typeof User.prototype;
