@@ -12,7 +12,7 @@ import {
   hashRefreshToken,
   generateLoginChallenge,
   hashLoginChallenge,
-} from "@/app/lib/auth/token";
+} from "@/app/lib/auth/token/token";
 import RefreshToken from "@/app/models/refreshToken.model";
 import LoginChallenge from "@/app/models/loginChallenge.model";
 import { UAParser } from "ua-parser-js";

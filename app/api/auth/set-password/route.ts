@@ -5,7 +5,7 @@ import connectToDB from "@/app/dbconfig/db";
 import User from "@/app/models/user.model";
 
 import { setPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
-import { verifyAccessToken } from "@/app/lib/auth/token";
+import { verifyAccessToken } from "@/app/lib/auth/token/token";
 
 interface AccessTokenPayload {
   id: string;

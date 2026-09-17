@@ -2,343 +2,170 @@ import User from "@/app/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
 
 import connectToDB from "@/app/dbconfig/db";
-import RefreshToken from "@/app/models/refreshToken.model";
-import { createAccessToken, generateLoginChallenge, generateRefreshToken, generateSessionId, hashLoginChallenge, hashRefreshToken } from "@/app/lib/auth/token";
-import { UAParser } from "ua-parser-js";
-import LoginChallenge from "@/app/models/loginChallenge.model";
+import { completeLogin } from "@/app/lib/auth/login/complete-login";
 
+export async function GET(request: NextRequest) {
+  try {
+    const code = request.nextUrl.searchParams.get("code");
 
-export async function GET(request:NextRequest){
-
-
-    
-try {
-        const code =  request.nextUrl.searchParams.get("code")
     if (!code) {
-    return NextResponse.json(
+      return NextResponse.json(
         {
-            success: false,
-            message: "Authorization code missing"
+          success: false,
+          message: "Authorization code missing",
         },
         { status: 400 }
-    );
-}
-    const googleState = request.nextUrl.searchParams.get("state")
-
-    const saveState = request.cookies.get("google-auth-state")?.value
-
-    if(googleState !==saveState ){
-        return NextResponse.json({success:false , message:"Invalid State"} , {status:401})
+      );
     }
 
+    const googleState = request.nextUrl.searchParams.get("state");
 
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token' , {
-        method:"POST",
-        headers:{
-            "Content-Type":"application/x-www-form-urlencoded"
+    const saveState = request.cookies.get("google-auth-state")?.value;
+
+    if (googleState !== saveState) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid State",
         },
-        body:new URLSearchParams({
-
-            code:code!,
-
-            client_id:process.env.GOOGLE_CLIENT_ID!,
-            client_secret:process.env.GOOGLE_CLIENT_SECRET!,
-            redirect_uri:process.env.GOOGLE_REDIRECT_URI!,
-            grant_type:"authorization_code"
-        })
-    })
-
-
-    if(!tokenResponse.ok){
-        return NextResponse.json({success:false , message : "access token required "})
+        { status: 401 }
+      );
     }
-    const tokenData = await tokenResponse.json()
 
-    const userResponse =await fetch(
-        "https://openidconnect.googleapis.com/v1/userinfo",
+    const tokenResponse = await fetch(
+      "https://oauth2.googleapis.com/token",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          code,
+          client_id: process.env.GOOGLE_CLIENT_ID!,
+          client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+          redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
+          grant_type: "authorization_code",
+        }),
+      }
+    );
 
-        {headers:{
-            Authorization:`Bearer ${tokenData.access_token}`
-        }}
-    )
+    if (!tokenResponse.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Failed to exchange authorization code",
+        },
+        { status: 401 }
+      );
+    }
 
-    const googleUser = await userResponse.json()
-    console.log(googleUser)
+    const tokenData = await tokenResponse.json();
 
+    const userResponse = await fetch(
+      "https://openidconnect.googleapis.com/v1/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      }
+    );
 
-    const email = googleUser.email
-    const name = googleUser.name 
+    if (!userResponse.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Failed to get Google user information",
+        },
+        { status: 401 }
+      );
+    }
+
+    const googleUser = await userResponse.json();
+
+    const email = googleUser.email;
+    const name = googleUser.name;
     const isVerified = googleUser.email_verified;
     const googleID = googleUser.sub;
 
-    if(!email || !name  || isVerified!==true || !googleID){
-        return NextResponse.json({success:false , message:"All Fields Required"} )
+    if (!email || !name || isVerified !== true || !googleID) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid Google user information",
+        },
+        { status: 400 }
+      );
     }
 
-    await connectToDB()
-    const userAgent = request.headers.get("user-agent") ?? "";
+    await connectToDB();
 
-const parser = new UAParser(userAgent);
 
-const browser = parser.getBrowser().name || "Unknown";
-const os = parser.getOS().name || "Unknown";
 
-const deviceInfo = parser.getDevice();
-const device = deviceInfo.type || "Desktop";
-    const user = await User.findOne({googleId:googleID})
-    if(user) {
-        user.isVerified=true
-
-if (user.password !== null) {
-    user.authProvider = "both"
-} else {
-    user.authProvider = "google"
-}
-
-        await user.save()
-
-if (user.twoFactorEnabled) {
-    const loginChallenge = generateLoginChallenge();
-    const challengeHash = hashLoginChallenge(loginChallenge);
-
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-    await LoginChallenge.create({
-        userId: user.id,
-        challengeHash,
-        expiresAt,
+    let user = await User.findOne({
+      googleId: googleID,
     });
 
-    return NextResponse.redirect(
-        new URL(
-            `/two-factor/login?challenge=${loginChallenge}&message=google-login`,
-            request.url
-        )
-    );
-}
-  const accessPayload = {
-    id: user.id,
-    type:"access"
-  }
- const accessToken = createAccessToken(accessPayload)
+    if (user) {
+      user.isVerified = true;
 
- const refreshToken = generateRefreshToken()
+      if (user.password !== null) {
+        user.authProvider = "both";
+      } else {
+        user.authProvider = "google";
+      }
 
- const hashedRefreshToken = hashRefreshToken(refreshToken)
+      await user.save();
 
- const currentDate =Date.now()
- const expiryDate = new Date(currentDate + 6.048e+8)
-
- const sessionExpiresAt = new Date(currentDate + 2.592e+9)
-
- const sessionId = generateSessionId()
-
-
-
- 
-const newRefreshToken = new RefreshToken({
-  userId: user.id,
-  expiresAt: expiryDate,
-  sessionExpiresAt,
-  tokenHash: hashedRefreshToken,
-  sessionId,
-  os,
-  browser,
-  device,
-});
-
- await newRefreshToken.save()
-
-
-    const response = NextResponse.redirect(
-    new URL("/profile?message=google-login", request.url)
-)
-
-  response.cookies.set({
-    name: 'accessToken',
-    value: accessToken,
-    httpOnly: true,
-    sameSite: "lax", 
-  
-    maxAge: 60 *15, 
-   
-  });
-  response.cookies.set({
-    name: 'refreshToken',
-    value: refreshToken,
-    httpOnly: true,
-    sameSite: "lax", 
-  
-    maxAge: 60 * 60 * 24 * 7, 
-   
-  });
-
-
-  return response
+      return completeLogin({
+        user,
+        request,
+        message: "google-login",
+      });
     }
 
-    const localUser =await User.findOne({email})
-
-    if(localUser){
-
-        localUser.authProvider="both"
-        localUser.googleId =googleID;
-        await localUser.save()
 
 
-      if (localUser.twoFactorEnabled) {
-    const loginChallenge = generateLoginChallenge();
-    const challengeHash = hashLoginChallenge(loginChallenge);
-
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-    await LoginChallenge.create({
-        userId: localUser.id,
-        challengeHash,
-        expiresAt,
+    user = await User.findOne({
+      email,
     });
 
-    return NextResponse.redirect(
-        new URL(
-            `/two-factor/login?challenge=${loginChallenge}&message=google-linked`,
-            request.url
-        )
-    );
-} 
-      
-  const accessPayload = {
-    id: localUser.id,
-    type:"access"
-  }
- const accessToken = createAccessToken(accessPayload)
+    if (user) {
+      user.authProvider = "both";
+      user.googleId = googleID;
 
- const refreshToken = generateRefreshToken()
+      await user.save();
 
- const hashedRefreshToken = hashRefreshToken(refreshToken)
-
- const currentDate =Date.now()
- const expiryDate = new Date(currentDate + 6.048e+8)
-
- const sessionExpiresAt = new Date(currentDate + 2.592e+9)
-
- const sessionId = generateSessionId()
-
-
-
- 
-const newRefreshToken = new RefreshToken({
-  userId: localUser.id,
-  expiresAt: expiryDate,
-  sessionExpiresAt,
-  tokenHash: hashedRefreshToken,
-  sessionId,
-  os,
-  browser,
-  device,
-});
-
- await newRefreshToken.save()
-
-    const response = NextResponse.redirect(
-    new URL("/profile?message=google-linked", request.url)
-)
-
-  response.cookies.set({
-    name: 'accessToken',
-    value: accessToken,
-    httpOnly: true,
-    sameSite: "lax", 
-  
-    maxAge: 60 *15, 
-   
-  });
-  response.cookies.set({
-    name: 'refreshToken',
-    value: refreshToken,
-    httpOnly: true,
-    sameSite: "lax", 
-  
-    maxAge: 60 * 60 * 24 * 7, 
-   
-  });
-
-  return response
+      return completeLogin({
+        user,
+        request,
+        message: "google-linked",
+      });
     }
 
-
-    const newGoogleUser = new User({
-        email,
-        name,
-        googleId:googleID,
-        authProvider:"google",
-        password:null,
-        isVerified:true,
-
-    })
-
-    await newGoogleUser.save()
-
-  const accessPayload = {
-    id: newGoogleUser.id,
-    type:"access"
-  }
- const accessToken = createAccessToken(accessPayload)
-
- const refreshToken = generateRefreshToken()
-
- const hashedRefreshToken = hashRefreshToken(refreshToken)
-
- const currentDate =Date.now()
- const expiryDate = new Date(currentDate + 6.048e+8)
-
- const sessionExpiresAt = new Date(currentDate + 2.592e+9)
-
- const sessionId = generateSessionId()
-
-
-
  
-const newRefreshToken = new RefreshToken({
-  userId: newGoogleUser.id,
-  expiresAt: expiryDate,
-  sessionExpiresAt,
-  tokenHash: hashedRefreshToken,
-  sessionId,
-  os,
-  browser,
-  device,
-});
- await newRefreshToken.save()
 
- const response = NextResponse.redirect(
-    new URL("/profile?message=local-g-login", request.url)
-)
+    user = await User.create({
+      email,
+      name,
+      googleId: googleID,
+      authProvider: "google",
+      password: null,
+      isVerified: true,
+    });
 
-  response.cookies.set({
-    name: 'accessToken',
-    value: accessToken,
-    httpOnly: true,
-    sameSite: "lax", 
-  
-    maxAge: 60 *15, 
-   
-  });
-  response.cookies.set({
-    name: 'refreshToken',
-    value: refreshToken,
-    httpOnly: true,
-    sameSite: "lax", 
-  
-    maxAge: 60 * 60 * 24 * 7, 
-   
-  });
-
-  return response
-    
-} catch (error: any) {
+    return completeLogin({
+      user,
+      request,
+      message: "local-g-login",
+    });
+  } catch (error: any) {
     console.error("OAuth Handler Error:", error);
+
     return NextResponse.json(
-      { success: false, message: error.message || "Internal server error" },
+      {
+        success: false,
+        message: error.message || "Internal server error",
+      },
       { status: 500 }
     );
   }

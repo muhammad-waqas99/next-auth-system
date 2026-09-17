@@ -2,7 +2,7 @@ import User from "@/app/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
 
 import connectToDB from "@/app/dbconfig/db";
-import { verifyAccessToken } from "@/app/lib/auth/token";
+import { verifyAccessToken } from "@/app/lib/auth/token/token";
 import BackupCode from "@/app/models/backupCode.model";
 
 interface TokenPayload {

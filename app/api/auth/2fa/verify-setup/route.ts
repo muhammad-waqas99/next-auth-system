@@ -1,5 +1,5 @@
 import connectToDB from "@/app/dbconfig/db";
-import { generateBackupCodes, hashRefreshToken } from "@/app/lib/auth/token";
+import { generateBackupCodes, hashRefreshToken } from "@/app/lib/auth/token/token";
 import BackupCode from "@/app/models/backupCode.model";
 import RefreshToken from "@/app/models/refreshToken.model";
 import User from "@/app/models/user.model";

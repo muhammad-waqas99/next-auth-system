@@ -9,7 +9,7 @@ import {
   generateSessionId,
   hashRefreshToken,
   hashLoginChallenge,
-} from "@/app/lib/auth/token";
+} from "@/app/lib/auth/token/token";
 import { UAParser } from "ua-parser-js";
 import { verify } from "otplib";
 

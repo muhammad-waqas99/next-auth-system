@@ -1,4 +1,4 @@
-import { createAccessToken, generateRefreshToken, generateSessionId, hashLoginChallenge, hashRefreshToken } from "@/app/lib/auth/token";
+import { createAccessToken, generateRefreshToken, generateSessionId, hashLoginChallenge, hashRefreshToken } from "@/app/lib/auth/token/token";
 import BackupCode from "@/app/models/backupCode.model";
 import LoginChallenge from "@/app/models/loginChallenge.model";
 import RefreshToken from "@/app/models/refreshToken.model";

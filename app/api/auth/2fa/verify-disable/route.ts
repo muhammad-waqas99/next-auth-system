@@ -2,7 +2,7 @@ import connectToDB from "@/app/dbconfig/db";
 import {
   hashDisableChallenge,
   hashRefreshToken,
-} from "@/app/lib/auth/token";
+} from "@/app/lib/auth/token/token";
 import RefreshToken from "@/app/models/refreshToken.model";
 import DisableChallenge from "@/app/models/twoFactorDisableChallenge.model";
 import User from "@/app/models/user.model";

@@ -1,5 +1,5 @@
 import connectToDB from "@/app/dbconfig/db";
-import { hashRefreshToken, verifyAccessToken } from "@/app/lib/auth/token";
+import { hashRefreshToken, verifyAccessToken } from "@/app/lib/auth/token/token";
 import RefreshToken from "@/app/models/refreshToken.model";
 import { NextRequest, NextResponse } from "next/server";
 
