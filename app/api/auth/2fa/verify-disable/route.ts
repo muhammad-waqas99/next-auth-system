@@ -3,6 +3,7 @@ import {
   hashDisableChallenge,
   hashRefreshToken,
 } from "@/app/lib/auth/token/token";
+import { consumeBackupCode } from "@/app/lib/auth/backup-code/consumeBackupCode";
 import RefreshToken from "@/app/models/refreshToken.model";
 import DisableChallenge from "@/app/models/twoFactorDisableChallenge.model";
 import User from "@/app/models/user.model";
@@ -11,26 +12,47 @@ import { NextRequest, NextResponse } from "next/server";
 
 interface ReqBody {
   challenge: string;
-  otp: string;
+  otp?: string;
+  backupCode?: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const reqBody: ReqBody = await request.json();
 
-    const { challenge, otp } = reqBody;
+    const { challenge, otp, backupCode } = reqBody;
 
-    if (!challenge || !otp) {
+    if (!challenge) {
       return NextResponse.json(
         {
           success: false,
-          message: "Challenge and OTP are required",
+          message: "Disable challenge is required",
         },
         { status: 400 }
       );
     }
 
-    if (!/^\d{6}$/.test(otp)) {
+    if (!otp && !backupCode) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "OTP or backup code is required",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (otp && backupCode) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Use either OTP or backup code",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (otp && !/^\d{6}$/.test(otp)) {
       return NextResponse.json(
         {
           success: false,
@@ -54,7 +76,6 @@ export async function POST(request: NextRequest) {
 
     await connectToDB();
 
-
     const hashedRefreshToken = hashRefreshToken(refreshToken);
 
     const refreshTokenCheck = await RefreshToken.findOne({
@@ -70,7 +91,6 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
-
 
     const currentUserId = refreshTokenCheck.userId;
 
@@ -110,7 +130,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (disableChallenge.userId.toString() !== currentUserId.toString()) {
+    if (
+      disableChallenge.userId.toString() !==
+      currentUserId.toString()
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -142,27 +165,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await verify({
-      secret: user.twoFactorSecret,
-      token: otp,
-      epochTolerance: 30,
-    });
+    if (otp) {
+      const result = await verify({
+        secret: user.twoFactorSecret,
+        token: otp,
+        epochTolerance: 30,
+      });
 
-    if (!result.valid) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid OTP",
-        },
-        { status: 401 }
-      );
+      if (!result.valid) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Invalid OTP",
+          },
+          { status: 401 }
+        );
+      }
     }
 
+    // Backup code verification
+    if (backupCode) {
+      const backupCodeConsumed = await consumeBackupCode(
+        currentUserId.toString(),
+        backupCode
+      );
+
+      if (!backupCodeConsumed) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Incorrect or already used backup code",
+          },
+          { status: 401 }
+        );
+      }
+    }
 
     disableChallenge.usedAt = new Date();
     await disableChallenge.save();
 
-  
     user.twoFactorEnabled = false;
     user.twoFactorSecret = null;
 
@@ -181,7 +222,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: "Something went wrong. Please try again later.",
+        message:
+          "Something went wrong. Please try again later.",
       },
       { status: 500 }
     );

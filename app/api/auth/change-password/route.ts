@@ -7,7 +7,7 @@ import { changePasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 
 interface TokenPayload {
   id: string;
-  email: string;
+  type: "access";
 }
 
 interface ChangePasswordBody {
@@ -19,18 +19,24 @@ interface ChangePasswordBody {
 export async function POST(request: NextRequest) {
   try {
     const reqBody: ChangePasswordBody = await request.json();
-const result = changePasswordSchema.safeParse(reqBody);
 
-if (!result.success) {
-  return NextResponse.json(
-    {
-      success: false,
-      message: result.error.issues[0].message,
-    },
-    { status: 400 }
-  );
-}
-    const { currentPassword, newPassword, confirmPassword } = result.data;
+    const result = changePasswordSchema.safeParse(reqBody);
+
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: result.error.issues[0].message,
+        },
+        { status: 400 }
+      );
+    }
+
+    const {
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    } = result.data;
 
     if (!currentPassword || !newPassword || !confirmPassword) {
       return NextResponse.json(
@@ -42,10 +48,9 @@ if (!result.success) {
       );
     }
 
-  
-    const token = request.cookies.get("token")?.value;
+    const accessToken = request.cookies.get("accessToken")?.value;
 
-    if (!token) {
+    if (!accessToken) {
       return NextResponse.json(
         {
           success: false,
@@ -55,13 +60,11 @@ if (!result.success) {
       );
     }
 
-   
     const decodedToken = jwt.verify(
-      token,
+      accessToken,
       process.env.JWT_SECRET!
     );
 
-  
     if (typeof decodedToken === "string") {
       return NextResponse.json(
         {
@@ -72,12 +75,25 @@ if (!result.success) {
       );
     }
 
-    const userID = (decodedToken as TokenPayload).id;
+    const tokenPayload = decodedToken as TokenPayload;
 
+    if (
+      !tokenPayload.id ||
+      tokenPayload.type !== "access"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid access token",
+        },
+        { status: 401 }
+      );
+    }
+
+    const userID = tokenPayload.id;
 
     await connectToDB();
 
-   
     const user = await User.findById(userID);
 
     if (!user) {
@@ -89,13 +105,19 @@ if (!result.success) {
         { status: 404 }
       );
     }
+
     if (!user.password) {
-  return NextResponse.json({
-    success: false,
-    message: "Password login is not available for this account.",
-  });
-}
-    const checkPassword =  bcrypt.compare(
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Password login is not available for this account.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const checkPassword = await bcrypt.compare(
       currentPassword,
       user.password
     );
@@ -110,18 +132,17 @@ if (!result.success) {
       );
     }
 
-  
     if (newPassword !== confirmPassword) {
       return NextResponse.json(
         {
           success: false,
-          message: "New password and confirm password do not match",
+          message:
+            "New password and confirm password do not match",
         },
         { status: 400 }
       );
     }
 
-   
     const salt = await bcrypt.genSalt(10);
 
     const newPasswordHashed = await bcrypt.hash(
@@ -129,7 +150,6 @@ if (!result.success) {
       salt
     );
 
-  
     user.password = newPasswordHashed;
 
     await user.save();

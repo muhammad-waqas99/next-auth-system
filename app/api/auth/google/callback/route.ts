@@ -2,7 +2,7 @@ import User from "@/app/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
 
 import connectToDB from "@/app/dbconfig/db";
-import { completeLogin } from "@/app/lib/auth/login/complete-login";
+import { completeLogin } from "@/app/lib/auth/login/completeLogin";
 
 export async function GET(request: NextRequest) {
   try {
