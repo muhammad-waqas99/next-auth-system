@@ -15,7 +15,7 @@ export function createAccessToken(payload:Payload){
  
 try { 
      
-    const accessToken =jwt.sign(payload,JWT_SECRET!,{expiresIn:"15s"}) 
+    const accessToken =jwt.sign(payload,JWT_SECRET!,{expiresIn:"16m"}) 
  
     return accessToken; 
 } catch (error:any) { 
