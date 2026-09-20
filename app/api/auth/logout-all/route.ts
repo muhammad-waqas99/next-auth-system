@@ -1,4 +1,5 @@
 import connectToDB from "@/app/dbconfig/db";
+import { clearAuthCookies } from "@/app/lib/auth/cookies/cookies";
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { verifyAccessToken } from "@/app/lib/auth/token/token";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
@@ -17,8 +18,7 @@ export async function POST(request: NextRequest){
     })
 
     const response = NextResponse.json({success:true , message : "Logout from all devices successful "} , {status: 200})
-    response.cookies.delete('accessToken')
-    response.cookies.delete('refreshToken')
+ clearAuthCookies(response)
 
     return response
     

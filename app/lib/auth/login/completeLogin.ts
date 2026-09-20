@@ -4,6 +4,7 @@ import User from "@/app/models/user.model";
 import { createLoginChallenge } from "./createLoginChallenge";
 import { createLoginSession } from "./createLoginSession";
 import { getDeviceInfo } from "../device/getDeviceInfo";
+import { setAuthCookies } from "../cookies/cookies";
 
 interface CompleteLoginParams {
   user: typeof User.prototype;
@@ -40,21 +41,7 @@ export async function completeLogin({
     new URL(`/profile?message=${message}`, request.url)
   );
 
-  response.cookies.set({
-    name: "accessToken",
-    value: accessToken,
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: 60 * 15,
-  });
-
-  response.cookies.set({
-    name: "refreshToken",
-    value: refreshToken,
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7,
-  });
+setAuthCookies(response, accessToken, refreshToken);
 
   return response;
 }

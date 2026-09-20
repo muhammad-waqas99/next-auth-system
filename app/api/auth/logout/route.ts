@@ -1,4 +1,5 @@
 import connectToDB from "@/app/dbconfig/db";
+import { clearAuthCookies } from "@/app/lib/auth/cookies/cookies";
 import { validateRefreshToken } from "@/app/lib/auth/refreshToken/refreshToken";
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { hashRefreshToken } from "@/app/lib/auth/token/token";
@@ -32,8 +33,7 @@ await connectToDB()
       { status: 200 }
     );
 
-    response.cookies.delete("refreshToken");
-    response.cookies.delete("accessToken");
+clearAuthCookies(response)
 
 
 

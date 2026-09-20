@@ -1,4 +1,5 @@
 import connectToDB from "@/app/dbconfig/db";
+import { clearAuthCookies, setAuthCookies } from "@/app/lib/auth/cookies/cookies";
 import { validateRefreshToken } from "@/app/lib/auth/refreshToken/refreshToken";
 import { createAccessToken, generateRefreshToken, hashRefreshToken,  } from "@/app/lib/auth/token/token";
 import { AppError } from "@/app/lib/errors/AppError";
@@ -55,25 +56,7 @@ await newRotateRefreshToken.save()
     { status: 200 }
   );
 
-  response.cookies.set({
-    name: 'accessToken',
-    value: newAccessToken,
-    httpOnly: true,
-    sameSite: "lax", 
-  
-    maxAge: 60 *15, 
-   
-  });
-  response.cookies.set({
-    name: 'refreshToken',
-    value: newRefreshToken,
-    httpOnly: true,
-    sameSite: "lax", 
-  
-    maxAge: 60 * 60 * 24 * 7, 
-   
-  });
-
+setAuthCookies(response, newAccessToken, newRefreshToken);
   return response;
 
 } catch (error: any) {
@@ -88,9 +71,7 @@ await newRotateRefreshToken.save()
       },
       { status: 401 }
     );
-
-    response.cookies.delete("accessToken");
-    response.cookies.delete("refreshToken");
+ clearAuthCookies(response)
 
     return response;
   }

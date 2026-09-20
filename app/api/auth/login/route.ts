@@ -8,6 +8,7 @@ import { loginSchema } from "@/app/lib/validationSchema/auth.schema";
 import { createLoginChallenge } from "@/app/lib/auth/login/createLoginChallenge";
 import { createLoginSession } from "@/app/lib/auth/login/createLoginSession";
 import { getDeviceInfo } from "@/app/lib/auth/device/getDeviceInfo";
+import { setAuthCookies } from "@/app/lib/auth/cookies/cookies";
 
 interface ReqBody {
   email: string;
@@ -129,21 +130,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
 
-    response.cookies.set({
-      name: "accessToken",
-      value: accessToken,
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 60 * 15,
-    });
-
-    response.cookies.set({
-      name: "refreshToken",
-      value: refreshToken,
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
-    });
+setAuthCookies(response, accessToken, refreshToken);
 
     return response;
   } catch (error: any) {
