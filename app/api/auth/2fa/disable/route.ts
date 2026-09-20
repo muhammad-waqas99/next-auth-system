@@ -1,10 +1,10 @@
-import connectToDB from "@/app/dbconfig/db";
+
 import requireAuth from "@/app/lib/auth/requireAuth";
-import { generateDisableChallenge, hashDisableChallenge, hashRefreshToken } from "@/app/lib/auth/token/token";
+import { generateDisableChallenge, hashDisableChallenge } from "@/app/lib/auth/token/token";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
-import RefreshToken from "@/app/models/refreshToken.model";
+
 import DisableChallenge from "@/app/models/twoFactorDisableChallenge.model";
-import User from "@/app/models/user.model";
+
 import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -18,7 +18,7 @@ export async function POST(request : NextRequest){
         if(!password){
             return NextResponse.json({success : false ,message: "password is Required"} , {status:400})
         }
-await connectToDB()
+
  const {user } = await requireAuth(request ,{
   includePassword:true
  })

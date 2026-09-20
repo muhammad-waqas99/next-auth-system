@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { setPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 
 import requireAuth from "@/app/lib/auth/requireAuth";
-import connectToDB from "@/app/dbconfig/db";
+
 import { errorHandler } from "@/app/lib/errors/errorHandler";
 
 
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     const { newPassword } = result.data;
 
-  await connectToDB()
+
        const {user } = await requireAuth(request,{
         includePassword:true
        })

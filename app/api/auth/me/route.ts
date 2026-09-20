@@ -1,8 +1,6 @@
-import User from "@/app/models/user.model";
+
 import { NextRequest, NextResponse } from "next/server";
 
-import connectToDB from "@/app/dbconfig/db";
-import { verifyAccessToken } from "@/app/lib/auth/token/token";
 import BackupCode from "@/app/models/backupCode.model";
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
@@ -14,13 +12,11 @@ interface TokenPayload {
 
 export async function GET(request: NextRequest) {
   try {
-  const {userId } =await requireAuth(request)
+  const {userId,user } =await requireAuth(request)
 
-    await connectToDB();
 
-    const currentUser = await User.findById(userId)
-      .select("-password");
 
+    const currentUser = user
 
     if (!currentUser) {
       return NextResponse.json(

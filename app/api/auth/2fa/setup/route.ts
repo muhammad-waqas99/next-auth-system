@@ -1,7 +1,4 @@
-import connectToDB from "@/app/dbconfig/db";
-import { hashRefreshToken } from "@/app/lib/auth/token/token";
-import RefreshToken from "@/app/models/refreshToken.model";
-import User from "@/app/models/user.model";
+
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { generateSecret, generateURI } from "otplib";
@@ -11,7 +8,7 @@ import { errorHandler } from "@/app/lib/errors/errorHandler";
 
 export async function POST(request: NextRequest) {
   try {
- await connectToDB()
+
  const {user } = await requireAuth(request ,{
   includePassword:true
  })

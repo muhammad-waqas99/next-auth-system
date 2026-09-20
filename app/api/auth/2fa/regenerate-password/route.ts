@@ -1,6 +1,6 @@
-import connectToDB from "@/app/dbconfig/db";
+
 import requireAuth from "@/app/lib/auth/requireAuth";
-import { generateRegenerateChallenge, hashRefreshToken, hashRegenerateChallenge } from "@/app/lib/auth/token/token";
+import { generateRegenerateChallenge,  hashRegenerateChallenge } from "@/app/lib/auth/token/token";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
 import RegenerateChallenge from "@/app/models/backupCodeRegenerateChallenge.model";
 
@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request:NextRequest){
 try {
-  await connectToDB()
+  
  const {user , userId} = await requireAuth(request,{
   includePassword:true
  })

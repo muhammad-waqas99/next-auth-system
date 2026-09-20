@@ -1,8 +1,8 @@
-import connectToDB from "@/app/dbconfig/db";
+
 import { clearAuthCookies, setAuthCookies } from "@/app/lib/auth/cookies/cookies";
 import { validateRefreshToken } from "@/app/lib/auth/refreshToken/refreshToken";
 import { createAccessToken, generateRefreshToken, hashRefreshToken,  } from "@/app/lib/auth/token/token";
-import { AppError } from "@/app/lib/errors/AppError";
+
 import { errorHandler } from "@/app/lib/errors/errorHandler";
 import { UnauthorizedError } from "@/app/lib/errors/UnauthorizedError";
 import RefreshToken from "@/app/models/refreshToken.model";

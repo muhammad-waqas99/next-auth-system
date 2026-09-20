@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
-import connectToDB from "@/app/dbconfig/db";
-import User from "@/app/models/user.model";
+
 import bcrypt from "bcryptjs";
 import { changePasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 import requireAuth from "@/app/lib/auth/requireAuth";

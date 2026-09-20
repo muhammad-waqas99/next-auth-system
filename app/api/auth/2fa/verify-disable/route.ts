@@ -1,12 +1,12 @@
-import connectToDB from "@/app/dbconfig/db";
+
 import {
   hashDisableChallenge,
-  hashRefreshToken,
+
 } from "@/app/lib/auth/token/token";
 import { consumeBackupCode } from "@/app/lib/auth/backup-code/consumeBackupCode";
-import RefreshToken from "@/app/models/refreshToken.model";
+
 import DisableChallenge from "@/app/models/twoFactorDisableChallenge.model";
-import User from "@/app/models/user.model";
+
 import { verify } from "otplib";
 import { NextRequest, NextResponse } from "next/server";
 import BackupCode from "@/app/models/backupCode.model";
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await connectToDB()
+  
  const {userId , user} = await requireAuth(request)
     const currentUserId = userId
 

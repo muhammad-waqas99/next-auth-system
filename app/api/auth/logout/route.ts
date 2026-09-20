@@ -1,16 +1,16 @@
-import connectToDB from "@/app/dbconfig/db";
+
 import { clearAuthCookies } from "@/app/lib/auth/cookies/cookies";
 import { validateRefreshToken } from "@/app/lib/auth/refreshToken/refreshToken";
 import requireAuth from "@/app/lib/auth/requireAuth";
-import { hashRefreshToken } from "@/app/lib/auth/token/token";
+
 import { errorHandler } from "@/app/lib/errors/errorHandler";
 import { UnauthorizedError } from "@/app/lib/errors/UnauthorizedError";
-import RefreshToken from "@/app/models/refreshToken.model";
+
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-await connectToDB()
+
     const {userId} = await requireAuth(request)
      const {session} = await validateRefreshToken(request)
 

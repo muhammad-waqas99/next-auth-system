@@ -1,6 +1,6 @@
-import connectToDB from "@/app/dbconfig/db";
+
 import requireAuth from "@/app/lib/auth/requireAuth";
-import { verifyAccessToken } from "@/app/lib/auth/token/token";
+
 import { errorHandler } from "@/app/lib/errors/errorHandler";
 import RefreshToken from "@/app/models/refreshToken.model";
 import { NextRequest, NextResponse } from "next/server";
@@ -14,7 +14,7 @@ try {
         return NextResponse.json({success : false , message: "Session Id Required"} , {status:404})
      }
 
- await connectToDB()
+
  const {userId}=await requireAuth(request)
     const session = await RefreshToken.updateOne({userId ,sessionId, revokedAt: null}, {revokedAt:new Date()})
 if (session.matchedCount === 0) {

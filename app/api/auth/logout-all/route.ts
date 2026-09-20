@@ -1,7 +1,7 @@
-import connectToDB from "@/app/dbconfig/db";
+
 import { clearAuthCookies } from "@/app/lib/auth/cookies/cookies";
 import requireAuth from "@/app/lib/auth/requireAuth";
-import { verifyAccessToken } from "@/app/lib/auth/token/token";
+
 import { errorHandler } from "@/app/lib/errors/errorHandler";
 import RefreshToken from "@/app/models/refreshToken.model";
 import { NextRequest, NextResponse } from "next/server";
@@ -9,8 +9,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest){
    try {
-  await connectToDB()
-  const {user, userId} = await requireAuth(request)
+
+  const { userId} = await requireAuth(request)
     await RefreshToken.updateMany({
         userId , revokedAt : null,
     },{

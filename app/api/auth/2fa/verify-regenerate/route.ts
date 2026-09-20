@@ -1,8 +1,8 @@
-import connectToDB from "@/app/dbconfig/db";
+
 import requireAuth from "@/app/lib/auth/requireAuth";
 import {
   generateBackupCodes,
-  hashRefreshToken,
+
   hashRegenerateChallenge,
 } from "@/app/lib/auth/token/token";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
@@ -14,7 +14,7 @@ import { verify } from "otplib";
 
 export async function POST(request: NextRequest) {
   try {
-     await connectToDB()
+    
 
     const {user, userId} = await requireAuth(request)
 
