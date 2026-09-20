@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { resetPasswordSchema } from "../lib/validationSchema/auth.schema";
 import toast from "react-hot-toast";
+import { validateForm } from "../lib/validationSchema/validateForm";
 
 type ResetStatus =
   | "idle"
@@ -45,37 +46,30 @@ export default function ResetPassword() {
     e: React.SyntheticEvent<HTMLFormElement>
   ) => {
 
-    console.log('onclick hit')
+ 
            e.preventDefault();
-        setFormErrors({})
-          const fieldError: Record<string ,string>= {} 
-          const result = resetPasswordSchema.safeParse(formDetails)
-      
-        if(!result.success){
-                result.error.issues.forEach(issue =>{
-            const field =issue.path[0] as string
-            fieldError[field] = issue.message
-            
-          })
-      
-      
-          setFormErrors(fieldError)
-      console.log(fieldError)  
-            return;
-        }
+setFormErrors({});
+
+const result = validateForm(resetPasswordSchema, formDetails);
+
+if (!result.success) {
+  setFormErrors(result.errors);
+  return;
+}
+
 
     try {
       setStatus("loading");
       setErrorMessage("");
 
-      console.log("get in try block")
+
 
       const response = await axios.post(
         "/api/auth/reset-password",
         {
-          password: formDetails.password,
+          password: result.data.password,
           confirmPassword:
-            formDetails.confirmPassword,
+            result.data.confirmPassword,
           plainToken,
         }
       );

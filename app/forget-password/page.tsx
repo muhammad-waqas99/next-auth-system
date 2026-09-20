@@ -5,6 +5,7 @@ import axios from "axios";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { forgotPasswordSchema } from "../lib/validationSchema/auth.schema";
+import { validateForm } from "../lib/validationSchema/validateForm";
 
 type ResetStatus =
   | "idle"
@@ -65,23 +66,15 @@ export default function ForgetPassword() {
     e: React.SyntheticEvent<HTMLFormElement>
   ) => {
            e.preventDefault();
-        setFormErrors({})
-          const fieldError: Record<string ,string>= {} 
-          const result = forgotPasswordSchema.safeParse({email})
-      
-        if(!result.success){
-                result.error.issues.forEach(issue =>{
-            const field =issue.path[0] as string
-            fieldError[field] = issue.message
-            
-          })
-      
-      
-          setFormErrors(fieldError)
-        
-            return;
-        }
-        
+setFormErrors({});
+
+const result = validateForm(forgotPasswordSchema,email);
+
+if (!result.success) {
+  setFormErrors(result.errors);
+  return;
+}
+
 
     try {
       setStatus("loading");
@@ -89,9 +82,9 @@ export default function ForgetPassword() {
 
       const response = await axios.post(
         "/api/auth/forget-password",
-        {
-          email,
-        }
+        
+        result.data
+        
       );
 
       setResetRequestId(

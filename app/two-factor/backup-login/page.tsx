@@ -4,12 +4,15 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { validateForm } from "@/app/lib/validationSchema/validateForm";
+import { backupLoginSchema } from "@/app/lib/validationSchema/auth.schema";
 
 export default function BackupLoginPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const challenge = searchParams.get("challenge");
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const [backupCode, setBackupCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,23 +20,22 @@ export default function BackupLoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!challenge) {
-      toast.error("Invalid login challenge");
-      return;
-    }
+setFormErrors({});
 
-    if (!backupCode) {
-      toast.error("Please enter your backup code");
-      return;
-    }
+const result = validateForm(backupLoginSchema, {
+  challenge,
+  backupCode,
+});
+
+if (!result.success) {
+  setFormErrors(result.errors);
+  return;
+}
 
     try {
       setLoading(true);
 
-      const response = await axios.post("/api/auth/2fa/backup-login", {
-        challenge,
-        backupCode,
-      });
+      const response = await axios.post("/api/auth/2fa/backup-login", result.data);
 
       if (response.data.success) {
         toast.success("Logged in successfully");
@@ -76,7 +78,11 @@ export default function BackupLoginPage() {
             placeholder="Enter backup code"
             className="w-full rounded-lg border border-gray-700 bg-[#111] px-4 py-3 text-white outline-none focus:border-blue-500"
           />
-
+       {formErrors.backupCode && (
+  <p className="mt-1 text-sm text-red-400">
+    {formErrors.backupCode}
+  </p>
+)}
           <button
             type="submit"
             disabled={loading}

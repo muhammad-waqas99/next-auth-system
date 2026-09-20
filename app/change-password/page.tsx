@@ -4,6 +4,7 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { changePasswordSchema } from "../lib/validationSchema/auth.schema";
+import { validateForm } from "../lib/validationSchema/validateForm";
 
 export default function ChangePassword() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -24,26 +25,18 @@ export default function ChangePassword() {
     try {
 
               e.preventDefault();
-        setFormErrors({})
-          const fieldError: Record<string ,string>= {} 
-          const result = changePasswordSchema.safeParse(formDetails)
-      
-        if(!result.success){
-                result.error.issues.forEach(issue =>{
-            const field =issue.path[0] as string
-            fieldError[field] = issue.message
-            
-          })
-      
-      
-          setFormErrors(fieldError)
-        
-            return;
-        }
-        
+setFormErrors({});
+
+const result = validateForm(changePasswordSchema,formDetails);
+
+if (!result.success) {
+  setFormErrors(result.errors);
+  return;
+}
+
       const response = await axios.post(
         "/api/auth/change-password",
-        formDetails,
+        result.data,
       );
 
       router.push("/profile");

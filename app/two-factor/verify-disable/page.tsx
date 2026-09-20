@@ -1,5 +1,10 @@
 "use client";
 
+import {
+
+  verifyOtpSchema,
+} from "@/app/lib/validationSchema/auth.schema";
+import { validateForm } from "@/app/lib/validationSchema/validateForm";
 import axios from "axios";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -11,6 +16,7 @@ export default function VerifyDisableTwoFactorPage() {
 
   const challenge = searchParams.get("challenge");
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [otp, setOtp] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -20,13 +26,16 @@ export default function VerifyDisableTwoFactorPage() {
       return;
     }
 
-    if (!otp) {
-      toast.error("OTP is required");
-      return;
-    }
+    setFormErrors({});
 
-    if (!/^\d{6}$/.test(otp)) {
-      toast.error("OTP must be 6 digits");
+    const result = validateForm(verifyOtpSchema , {
+      challenge,
+      otp,
+
+    });
+
+    if (!result.success) {
+      setFormErrors(result.errors);
       return;
     }
 
@@ -35,10 +44,7 @@ export default function VerifyDisableTwoFactorPage() {
 
       const response = await axios.post(
         "/api/auth/2fa/verify-disable",
-        {
-          challenge,
-          otp,
-        }
+result.data
       );
 
       if (response.data.success) {
@@ -82,11 +88,19 @@ export default function VerifyDisableTwoFactorPage() {
           inputMode="numeric"
           maxLength={6}
           value={otp}
-          onChange={(e) => setOtp(e.target.value)}
+          onChange={(e) =>
+            setOtp(e.target.value.replace(/\D/g, ""))
+          }
           placeholder="Enter 6-digit OTP"
-          className="w-full border rounded-lg px-4 py-3 mb-4"
+          className="w-full border rounded-lg px-4 py-3 mb-1"
           disabled={isVerifying}
         />
+
+        {formErrors.otp && (
+          <p className="mt-1 mb-3 text-sm text-red-400">
+            {formErrors.otp}
+          </p>
+        )}
 
         <button
           onClick={verifyDisable}

@@ -1,5 +1,7 @@
 "use client";
 
+import {  verifyOtpSchema } from "@/app/lib/validationSchema/auth.schema";
+import { validateForm } from "@/app/lib/validationSchema/validateForm";
 import axios from "axios";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -11,6 +13,7 @@ export default function VerifyRegenerateBackupCodesPage() {
 
   const challenge = searchParams.get("challenge");
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [otp, setOtp] = useState("");
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -21,23 +24,28 @@ export default function VerifyRegenerateBackupCodesPage() {
       return;
     }
 
-    if (!otp) {
-      toast.error("OTP is required");
-      return;
-    }
+    setFormErrors({});
 
-    if (!/^\d{6}$/.test(otp)) {
-      toast.error("OTP must be 6 digits");
+    const result = validateForm(verifyOtpSchema , {
+      challenge,
+      otp,
+    });
+
+    if (!result.success) {
+      setFormErrors(result.errors);
       return;
     }
 
     try {
       setIsVerifying(true);
 
-      const response = await axios.post("/api/auth/2fa/verify-regenerate", {
-        challenge,
-        otp,
-      });
+      const response = await axios.post(
+        "/api/auth/2fa/verify-regenerate",
+        {
+          challenge,
+          otp,
+        }
+      );
 
       if (response.data.success) {
         setBackupCodes(response.data.backupCodes || []);
@@ -47,7 +55,7 @@ export default function VerifyRegenerateBackupCodesPage() {
     } catch (error: any) {
       toast.error(
         error.response?.data?.message ||
-          "Something went wrong. Please try again later.",
+          "Something went wrong. Please try again later."
       );
     } finally {
       setIsVerifying(false);
@@ -89,7 +97,10 @@ export default function VerifyRegenerateBackupCodesPage() {
             </p>
 
             <div className="mt-6">
-              <label htmlFor="otp" className="block text-sm text-zinc-300 mb-2">
+              <label
+                htmlFor="otp"
+                className="block text-sm text-zinc-300 mb-2"
+              >
                 Authentication Code
               </label>
 
@@ -101,10 +112,18 @@ export default function VerifyRegenerateBackupCodesPage() {
                 maxLength={6}
                 inputMode="numeric"
                 placeholder="Enter 6-digit code"
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) =>
+                  setOtp(e.target.value.replace(/\D/g, ""))
+                }
                 className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white outline-none focus:border-white tracking-widest text-center"
                 disabled={isVerifying}
               />
+
+              {formErrors.otp && (
+                <p className="mt-1 text-sm text-red-400">
+                  {formErrors.otp}
+                </p>
+              )}
 
               <button
                 type="button"
@@ -153,8 +172,8 @@ export default function VerifyRegenerateBackupCodesPage() {
               <p className="font-semibold">Important</p>
 
               <p className="mt-1">
-                These backup codes will only be shown now. Save or download them
-                before leaving this page.
+                These backup codes will only be shown now. Save or download
+                them before leaving this page.
               </p>
             </div>
 

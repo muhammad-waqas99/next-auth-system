@@ -1,6 +1,10 @@
-
 "use client";
 
+import {
+  setupTwoFactorSchema,
+  verifySetupSchema,
+} from "@/app/lib/validationSchema/auth.schema";
+import { validateForm } from "@/app/lib/validationSchema/validateForm";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -8,6 +12,8 @@ import toast from "react-hot-toast";
 
 export default function TwoFactorSetup() {
   const router = useRouter();
+
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
@@ -25,17 +31,24 @@ export default function TwoFactorSetup() {
   ) => {
     e.preventDefault();
 
-    if (!password) {
-      toast.error("Please enter your password");
+    setFormErrors({});
+
+    const result = validateForm(setupTwoFactorSchema, {
+      password,
+    });
+
+    if (!result.success) {
+      setFormErrors(result.errors);
       return;
     }
 
     try {
       setIsSettingUp(true);
 
-      const response = await axios.post("/api/auth/2fa/setup", {
-        password,
-      });
+      const response = await axios.post(
+        "/api/auth/2fa/setup",
+        result.data
+      );
 
       setQrImg(response.data.qrCode);
       setOtpSecret(response.data.secret);
@@ -56,13 +69,15 @@ export default function TwoFactorSetup() {
   ) => {
     e.preventDefault();
 
-    if (!otp) {
-      toast.error("Please enter the OTP");
-      return;
-    }
+    setFormErrors({});
 
-    if (otp.length !== 6) {
-      toast.error("OTP must be 6 digits");
+    const result = validateForm(verifySetupSchema, {
+      otp,
+      otpSecret,
+    });
+
+    if (!result.success) {
+      setFormErrors(result.errors);
       return;
     }
 
@@ -71,10 +86,7 @@ export default function TwoFactorSetup() {
 
       const response = await axios.post(
         "/api/auth/2fa/verify-setup",
-        {
-          otpSecret,
-          otp,
-        }
+        result.data
       );
 
       if (response.data.success) {
@@ -115,7 +127,6 @@ export default function TwoFactorSetup() {
   return (
     <main className="min-h-screen bg-[#111111] text-white flex items-center justify-center px-4">
       <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#181818] p-8">
-
         {!backupCodes.length ? (
           <>
             <h1 className="text-2xl font-bold text-center">
@@ -145,7 +156,14 @@ export default function TwoFactorSetup() {
                     placeholder="Enter your password"
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white outline-none focus:border-white"
+                    disabled={isSettingUp}
                   />
+
+                  {formErrors.password && (
+                    <p className="mt-1 text-sm text-red-400">
+                      {formErrors.password}
+                    </p>
+                  )}
 
                   <button
                     type="submit"
@@ -198,7 +216,14 @@ export default function TwoFactorSetup() {
                       setOtp(e.target.value.replace(/\D/g, ""))
                     }
                     className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white outline-none focus:border-white tracking-widest text-center"
+                    disabled={isVerifying}
                   />
+
+                  {formErrors.otp && (
+                    <p className="mt-1 text-sm text-red-400">
+                      {formErrors.otp}
+                    </p>
+                  )}
 
                   <button
                     type="submit"
@@ -216,7 +241,8 @@ export default function TwoFactorSetup() {
             <button
               type="button"
               onClick={() => router.push("/profile")}
-              className="mt-4 w-full rounded-lg border border-zinc-700 px-4 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800"
+              disabled={isSettingUp || isVerifying}
+              className="mt-4 w-full rounded-lg border border-zinc-700 px-4 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Cancel
             </button>
@@ -246,9 +272,7 @@ export default function TwoFactorSetup() {
             </div>
 
             <div className="mt-5 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-300">
-              <p className="font-semibold">
-                Important
-              </p>
+              <p className="font-semibold">Important</p>
 
               <p className="mt-1">
                 These backup codes will only be shown now. Save or
@@ -277,4 +301,3 @@ export default function TwoFactorSetup() {
     </main>
   );
 }
-

@@ -31,14 +31,9 @@ export const signupSchema = z
 
     password: passwordSchema,
 
-    // confirmPassword: z
-    //   .string()
-    //   .min(1, "Confirm password is required"),
+
   })
-  // .refine((data) => data.password === data.confirmPassword, {
-  //   message: "Password and confirm password do not match",
-  //   path: ["confirmPassword"],
-  // });
+
 
 
 export const loginSchema = z.object({
@@ -133,8 +128,75 @@ export const resetPasswordStatusSchema = z.object({
     .uuid("Invalid reset request ID"),
 });
 
+const passwordInputSchema = z
+  .string()
+  .min(1, "Password is required");
+
+const challengeSchema = z
+  .string()
+  .min(1, "Challenge is required");
+
+const otpSchema = z
+  .string()
+  .length(6, "OTP must be exactly 6 digits")
+  .regex(/^\d+$/, "OTP must contain only digits");
+
+const backupCodeSchema = z
+  .string()
+  .min(1, "Backup code is required");
+
+const otpSecretSchema = z
+  .string()
+  .min(1, "OTP secret is required");
 
 
+  export const backupLoginSchema = z.object({
+  challenge: challengeSchema,
+  backupCode: backupCodeSchema,
+});
+
+export const disableTwoFactorSchema = z.object({
+  password: passwordInputSchema,
+});
+
+export const regeneratePasswordSchema = z.object({
+  password: passwordInputSchema,
+});
+
+export const setupTwoFactorSchema = z.object({
+  password: passwordInputSchema,
+});
+
+export const verifyDisableSchema = z.object({
+  challenge: challengeSchema,
+  otp: otpSchema,
+  backupCode: backupCodeSchema,
+});
+
+export const verifyOtpSchema  = z.object({
+  challenge: challengeSchema,
+  otp: otpSchema,
+});
+
+export const verifyRegenerateSchema = z.object({
+  challenge: challengeSchema,
+  otp: otpSchema,
+});
+
+export const verifySetupSchema = z.object({
+  otpSecret: otpSecretSchema,
+  otp: otpSchema,
+});
+
+
+export type BackupLoginInput = z.infer<typeof backupLoginSchema>;
+export type DisableTwoFactorInput = z.infer<typeof disableTwoFactorSchema>;
+export type RegeneratePasswordInput = z.infer<typeof regeneratePasswordSchema>;
+export type SetupTwoFactorInput = z.infer<typeof setupTwoFactorSchema>;
+export type VerifyDisableInput = z.infer<typeof verifyDisableSchema>;
+export type VerifyLoginInput = z.infer<typeof verifyOtpSchema >;
+export type VerifyRegenerateInput = z.infer<typeof verifyRegenerateSchema>;
+export type VerifySetupInput = z.infer<typeof verifySetupSchema>;
 
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

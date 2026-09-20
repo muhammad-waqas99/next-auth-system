@@ -1,5 +1,7 @@
 "use client";
 
+import { disableTwoFactorSchema } from "@/app/lib/validationSchema/auth.schema";
+import { validateForm } from "@/app/lib/validationSchema/validateForm";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -7,22 +9,28 @@ import toast from "react-hot-toast";
 
 export default function RegenerateBackupCodesPage() {
   const router = useRouter();
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const [password, setPassword] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
 
   const verifyPassword = async () => {
-    if (!password) {
-      toast.error("Password is required");
-      return;
-    }
 
+
+setFormErrors({});
+
+const result = validateForm(disableTwoFactorSchema, password);
+
+if (!result.success) {
+  setFormErrors(result.errors);
+  return;
+}  
     try {
       setIsVerifying(true);
 
       const response = await axios.post(
         "/api/auth/2fa/regenerate-password",
-        { password }
+        result.data
       );
 
       if (response.data.success) {
@@ -74,6 +82,11 @@ export default function RegenerateBackupCodesPage() {
               className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white outline-none focus:border-zinc-500"
               disabled={isVerifying}
             />
+                                {formErrors.password && (
+    <p className="mt-1 text-sm text-red-400">
+      {formErrors.password}
+    </p>
+  )}
           </div>
 
           <button

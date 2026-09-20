@@ -6,6 +6,7 @@
   import { useState } from "react";
   import { loginSchema } from "../lib/validationSchema/auth.schema";
 import toast from "react-hot-toast";
+import { validateForm } from "../lib/validationSchema/validateForm";
   interface LoginForm {
     email: string;
     password: string;
@@ -31,28 +32,21 @@ import toast from "react-hot-toast";
         if (isLoggingIn) return;
 
 setIsLoggingIn(true)
-        setFormErrors({})
-          const fieldError: Record<string ,string>= {} 
-          const result = loginSchema.safeParse(user)
-      
-        if(!result.success){
-                result.error.issues.forEach(issue =>{
-            const field =issue.path[0] as string
-            fieldError[field] = issue.message
-            
-          })
-      
-      
-          setFormErrors(fieldError)
-        
-            return;
-        }
+setFormErrors({});
+
+const result = validateForm(loginSchema, user);
+
+if (!result.success) {
+  setFormErrors(result.errors);
+  return;
+}
+
         
     
       try {
-        const response = await axios.post("/api/auth/login", user);
+        const response = await axios.post("/api/auth/login", result.data);
     
-        console.log(response.data);
+
     toast.success(response.data.message);
 
     if (response.data.requiresTwoFactor) {

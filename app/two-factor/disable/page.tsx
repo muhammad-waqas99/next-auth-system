@@ -1,5 +1,7 @@
 "use client";
 
+import { disableTwoFactorSchema } from "@/app/lib/validationSchema/auth.schema";
+import { validateForm } from "@/app/lib/validationSchema/validateForm";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -7,22 +9,26 @@ import toast from "react-hot-toast";
 
 export default function DisableTwoFactorPage() {
   const router = useRouter();
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleDisableSetup = async () => {
-    if (!password) {
-      toast.error("Password is required");
-      return;
-    }
+setFormErrors({});
+
+const result = validateForm(disableTwoFactorSchema, password);
+
+if (!result.success) {
+  setFormErrors(result.errors);
+  return;
+}
+
 
     try {
       setIsLoading(true);
 
-      const response = await axios.post("/api/auth/2fa/disable", {
-        password,
-      });
+      const response = await axios.post("/api/auth/2fa/disable", result.data);
 
       if (response.data.success) {
         toast.success("Password verified");
@@ -62,7 +68,11 @@ export default function DisableTwoFactorPage() {
           className="w-full border rounded-lg px-4 py-3 mb-4"
           disabled={isLoading}
         />
-
+                    {formErrors.password && (
+    <p className="mt-1 text-sm text-red-400">
+      {formErrors.password}
+    </p>
+  )}
         <button
           onClick={handleDisableSetup}
           disabled={isLoading}

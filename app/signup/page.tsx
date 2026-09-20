@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signupSchema } from "../lib/validationSchema/auth.schema";
 import toast from "react-hot-toast";
+import { validateForm } from "../lib/validationSchema/validateForm";
 
 
 
@@ -43,31 +44,25 @@ const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
 const onSignup = async (e: React.SyntheticEvent<HTMLFormElement>) => {
   e.preventDefault();
-  setFormErrors({})
-     const fieldError: Record<string ,string>= {} 
-     const result = signupSchema.safeParse(user)
+setFormErrors({});
 
-   if(!result.success){
-          result.error.issues.forEach(issue =>{
-      const field =issue.path[0] as string
-       fieldError[field] = issue.message
-      
-    })
+const result = validateForm(signupSchema, user);
 
- 
-    setFormErrors(fieldError)
-    console.log(formErrors)
-       return;
-   }
-  
+if (!result.success) {
+  setFormErrors(result.errors);
+  return;
+}
+
+
+
 
   try {
-    const response = await axios.post("/api/auth/signup", user);
+    const response = await axios.post("/api/auth/signup", result.data);
      
     console.log(response.data);
     toast.success(response.data.message);
 
-    router.push(`/verify-email-sent?email=${user.email}`);
+    router.push(`/verify-email-sent?email=${result.data.email}`);
   } catch (error:any) {
     console.log("Something went wrong");
     toast.error(

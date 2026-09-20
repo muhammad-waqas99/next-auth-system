@@ -1,5 +1,7 @@
 "use client";
 
+import { backupLoginSchema } from "@/app/lib/validationSchema/auth.schema";
+import { validateForm } from "@/app/lib/validationSchema/validateForm";
 import axios from "axios";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -10,30 +12,30 @@ export default function BackupDisableTwoFactorPage() {
   const searchParams = useSearchParams();
 
   const challenge = searchParams.get("challenge");
-
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [backupCode, setBackupCode] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
 
   const verifyDisable = async () => {
-    if (!challenge) {
-      toast.error("Invalid disable challenge");
-      return;
-    }
+setFormErrors({});
 
-    if (!backupCode) {
-      toast.error("Backup code is required");
-      return;
-    }
+const result = validateForm(backupLoginSchema, {
+  challenge,
+  backupCode,
+});
+
+if (!result.success) {
+  setFormErrors(result.errors);
+  return;
+}
+    
 
     try {
       setIsVerifying(true);
 
       const response = await axios.post(
         "/api/auth/2fa/verify-disable",
-        {
-          challenge,
-          backupCode,
-        }
+  result.data
       );
 
       if (response.data.success) {
@@ -71,7 +73,11 @@ export default function BackupDisableTwoFactorPage() {
           className="w-full border rounded-lg px-4 py-3 mb-4"
           disabled={isVerifying}
         />
-
+{formErrors.backupCode && (
+  <p className="mt-1 text-sm text-red-400">
+    {formErrors.backupCode}
+  </p>
+)}
         <button
           onClick={verifyDisable}
           disabled={isVerifying}

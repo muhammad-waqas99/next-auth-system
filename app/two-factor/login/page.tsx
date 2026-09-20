@@ -1,5 +1,7 @@
 "use client";
 
+import {  verifyOtpSchema } from "@/app/lib/validationSchema/auth.schema";
+import { validateForm } from "@/app/lib/validationSchema/validateForm";
 import axios from "axios";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -10,33 +12,29 @@ export default function TwoFactorLogin() {
   const searchParams = useSearchParams();
 
   const challenge = searchParams.get("challenge");
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const [otp, setOtp] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
 
   const verifyLogin = async () => {
-    if (!challenge) {
-      toast.error("Invalid login challenge");
-      return;
-    }
+setFormErrors({});
 
-    if (!otp) {
-      toast.error("Please enter your OTP");
-      return;
-    }
+const result = validateForm(verifyOtpSchema , {
+  challenge,
+  otp,
+});
 
-    if (!/^\d{6}$/.test(otp)) {
-      toast.error("OTP must be 6 digits");
-      return;
-    }
+if (!result.success) {
+  setFormErrors(result.errors);
+  return;
+}
+    
 
     try {
       setIsVerifying(true);
 
-      const response = await axios.post("/api/auth/2fa/verify-login", {
-        challenge,
-        otp,
-      });
+      const response = await axios.post("/api/auth/2fa/verify-login", result.data);
 
       if (response.data.success) {
         toast.success(response.data.message);
@@ -86,6 +84,10 @@ export default function TwoFactorLogin() {
               className="w-full rounded-lg border px-4 py-3 outline-none"
               disabled={isVerifying}
             />
+                                {formErrors.otp && (
+    <p className="mt-1 text-sm text-red-400">
+      {formErrors.otp}
+    </p>)}
           </div>
 
           <button

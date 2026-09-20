@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { setPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 import toast from "react-hot-toast";
+import { validateForm } from "../lib/validationSchema/validateForm";
 
 export default function ChangePassword() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -25,26 +26,19 @@ export default function ChangePassword() {
     try {
 
   
-        setFormErrors({})
-          const fieldError: Record<string ,string>= {} 
-          const result = setPasswordSchema.safeParse(formDetails)
-      
-        if(!result.success){
-                result.error.issues.forEach(issue =>{
-            const field =issue.path[0] as string
-            fieldError[field] = issue.message
-            
-          })
-      
-      
-          setFormErrors(fieldError)
-        
-            return;
-        }
+setFormErrors({});
+
+const result = validateForm(setPasswordSchema, formDetails);
+
+if (!result.success) {
+  setFormErrors(result.errors);
+  return;
+}
+
         
  const response =await axios.post(
         "/api/auth/set-password",
-        formDetails,
+        result.data,
       );
  toast.success(response.data.message);
       router.push("/profile");
