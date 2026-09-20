@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 
 
 
@@ -8,6 +7,7 @@ import { setPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 import requireAuth from "@/app/lib/auth/requireAuth";
 
 import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { hashPassword } from "@/app/lib/auth/password/password";
 
 
 export async function POST(request: NextRequest) {
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await hashPassword(newPassword)
 
     user.password = hashedPassword;
     user.authProvider = "both";

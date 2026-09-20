@@ -1,9 +1,10 @@
 import User from "@/app/models/user.model";
-import bcrypt from "bcryptjs";
+
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import connectToDB from "@/app/dbconfig/db";
 import { resetPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
+import { hashPassword } from "@/app/lib/auth/password/password";
 
 export async function POST(request: NextRequest) {
   try {
@@ -85,14 +86,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const salt = await bcrypt.genSalt(10);
+    
 
-    const hashPassword = await bcrypt.hash(
-      password,
-      salt
+    const hashedPassword = await hashPassword(
+      password
     );
 
-    user.password = hashPassword;
+    user.password = hashedPassword;
 
 
     user.resetPasswordToken = undefined;

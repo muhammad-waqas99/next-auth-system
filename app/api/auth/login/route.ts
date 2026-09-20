@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
+
 import User from "@/app/models/user.model";
 
 import connectToDB from "@/app/dbconfig/db";
@@ -9,6 +9,7 @@ import { createLoginChallenge } from "@/app/lib/auth/login/createLoginChallenge"
 import { createLoginSession } from "@/app/lib/auth/login/createLoginSession";
 import { getDeviceInfo } from "@/app/lib/auth/device/getDeviceInfo";
 import { setAuthCookies } from "@/app/lib/auth/cookies/cookies";
+import { comparePassword } from "@/app/lib/auth/password/password";
 
 interface ReqBody {
   email: string;
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const checkPassword = await bcrypt.compare(password, user.password);
+    const checkPassword = await comparePassword(password, user.password);
 
     if (!checkPassword) {
       return NextResponse.json(

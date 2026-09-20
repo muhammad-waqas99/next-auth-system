@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import { changePasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { InvalidPasswordError } from "@/app/lib/errors/InvalidPasswordError";
+import { hashPassword } from "@/app/lib/auth/password/password";
 
 interface TokenPayload {
   id: string;
@@ -69,10 +71,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const checkPassword = await bcrypt.compare(
-      currentPassword,
-      user.password
-    );
+    const checkPassword =  await comparePassword(
+  currentPassword,
+  user.password
+);
+
+if (!checkPassword) {
+  throw new InvalidPasswordError();
+}
 
     if (!checkPassword) {
       return NextResponse.json(
@@ -95,13 +101,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const salt = await bcrypt.genSalt(10);
+  
 
-    const newPasswordHashed = await bcrypt.hash(
-      newPassword,
-      salt
-    );
-
+    const newPasswordHashed = await hashPassword(newPassword)
     user.password = newPasswordHashed;
 
     await user.save();

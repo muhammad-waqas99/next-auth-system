@@ -1,4 +1,5 @@
 
+import { comparePassword } from "@/app/lib/auth/password/password";
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { generateRegenerateChallenge,  hashRegenerateChallenge } from "@/app/lib/auth/token/token";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
@@ -50,7 +51,7 @@ if (!user.twoFactorEnabled || !user.twoFactorSecret)  {
         }
     
       
-        const isPasswordCorrect = await bcrypt.compare(
+        const isPasswordCorrect = await comparePassword(
           password,
           user.password
         );

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
+
 import User from "@/app/models/user.model";
 import connectToDB from "@/app/dbconfig/db";
 import crypto from 'crypto';
 import sendMail from "@/app/lib/mail";
 
 import { signupSchema } from "@/app/lib/validationSchema/auth.schema";
+import { hashPassword } from "@/app/lib/auth/password/password";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
 
 interface ReqBody {
   name: string;
@@ -63,8 +65,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+   
+    const hashedPassword = await hashPassword(password)
 
      const verificationToken =  crypto.randomBytes(32).toString('hex');
      const verificationTokenExpiry = new Date(Date.now() + 3600000)
@@ -94,12 +96,6 @@ export async function POST(request: NextRequest) {
   } catch (error:any) {
 
      console.log("Signup error:", error.message);
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Something went wrong. Please try again later.",
-      },
-      { status: 500 }
-    );
+    return errorHandler(error)
   }
 }

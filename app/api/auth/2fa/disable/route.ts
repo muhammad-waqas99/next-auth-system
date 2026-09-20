@@ -1,11 +1,12 @@
 
+import { comparePassword } from "@/app/lib/auth/password/password";
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { generateDisableChallenge, hashDisableChallenge } from "@/app/lib/auth/token/token";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
 
 import DisableChallenge from "@/app/models/twoFactorDisableChallenge.model";
 
-import bcrypt from "bcryptjs";
+
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request : NextRequest){
@@ -43,7 +44,7 @@ export async function POST(request : NextRequest){
       );
     }
 
-    const checkPassword = await bcrypt.compare(password , user.password)
+    const checkPassword = await comparePassword(password , user.password)
     if(!checkPassword){
         return NextResponse.json({success: false , message : "incorrect password"} , {status: 401})
     }

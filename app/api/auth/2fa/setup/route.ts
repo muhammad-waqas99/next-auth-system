@@ -5,6 +5,7 @@ import { generateSecret, generateURI } from "otplib";
 import QRCode from "qrcode";
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { comparePassword } from "@/app/lib/auth/password/password";
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
   
-    const isPasswordCorrect = await bcrypt.compare(
+    const isPasswordCorrect = await comparePassword(
       password,
       user.password
     );
