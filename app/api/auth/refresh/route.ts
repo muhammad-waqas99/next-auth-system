@@ -1,5 +1,9 @@
 import connectToDB from "@/app/dbconfig/db";
+import { validateRefreshToken } from "@/app/lib/auth/refreshToken/refreshToken";
 import { createAccessToken, generateRefreshToken, hashRefreshToken,  } from "@/app/lib/auth/token/token";
+import { AppError } from "@/app/lib/errors/AppError";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { UnauthorizedError } from "@/app/lib/errors/UnauthorizedError";
 import RefreshToken from "@/app/models/refreshToken.model";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -9,59 +13,9 @@ export async function POST(request : NextRequest){
 
   try {
     
+      const {session} = await validateRefreshToken(request)
 
-    const refreshToken = request.cookies.get('refreshToken')?.value.toString()
-
-
-      if (  !refreshToken) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-
-
-await connectToDB()
-  const hashedRefreshToken = hashRefreshToken(refreshToken).toString()
-
- const refreshTokenCheck = await RefreshToken.findOne({tokenHash:hashedRefreshToken})
-
-
- if(!refreshTokenCheck){
-const response = NextResponse.json(
-  {
-    success: false,
-    message: "Invalid or expired refresh token",
-  },
-  { status: 401 }
-);
-
-response.cookies.delete("accessToken");
-response.cookies.delete("refreshToken");
-
-return response;
- }
-
- const revokedAt =refreshTokenCheck.revokedAt
-
-const currentDate = new Date()
-
- if(revokedAt !== null || refreshTokenCheck.expiresAt < currentDate || refreshTokenCheck.sessionExpiresAt < currentDate){
-       
-  const response = NextResponse.json(
-  {
-    success: false,
-    message: "Invalid or expired refresh token",
-  },
-  { status: 401 }
-);
-
-response.cookies.delete("accessToken");
-response.cookies.delete("refreshToken");
-
-return response;
- 
- }
-
-     const userId = refreshTokenCheck.userId.toString()
+     const userId = session.userId.toString()
   const newRefreshToken = generateRefreshToken()
   const newHashedRefreshToken = hashRefreshToken(newRefreshToken).toString()
   const accessPayload={
@@ -71,26 +25,26 @@ return response;
   const newAccessToken = createAccessToken(accessPayload)
 
 
-
+ const currentDate = new Date()
    const expiryDate = new Date(currentDate.getTime() + 6.048e+8)
 
  
 
-   refreshTokenCheck.revokedAt = currentDate;
+   session.revokedAt = currentDate;
 
 
-await refreshTokenCheck.save()
+await session.save()
 
 const newRotateRefreshToken = new RefreshToken({
     expiresAt:expiryDate,
-    sessionExpiresAt:refreshTokenCheck.sessionExpiresAt,
-    userId:refreshTokenCheck.userId,
+    sessionExpiresAt:session.sessionExpiresAt,
+    userId:session.userId,
     tokenHash:newHashedRefreshToken,
-    sessionId:refreshTokenCheck.sessionId,
+    sessionId:session.sessionId,
     lastUsedAt:currentDate,
-      os: refreshTokenCheck.os,
-  browser: refreshTokenCheck.browser,
-  device: refreshTokenCheck.device,
+      os: session.os,
+  browser: session.browser,
+  device: session.device,
     
 
 })
@@ -122,16 +76,24 @@ await newRotateRefreshToken.save()
 
   return response;
 
-  } catch (error:any) {
+} catch (error: any) {
+  console.log("Refresh error:", error.message);
 
-     console.log("Login error:", error.message);
-    return NextResponse.json(
+  if (error instanceof UnauthorizedError) {
+    const response = NextResponse.json(
       {
         success: false,
-        message: "Something went wrong. Please try again later.",
+        code: error.code,
+        message: error.message,
       },
-      { status: 500 }
+      { status: 401 }
     );
+
+    response.cookies.delete("accessToken");
+    response.cookies.delete("refreshToken");
+
+    return response;
   }
 
-}
+  return errorHandler(error);
+}}

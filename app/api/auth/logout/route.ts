@@ -1,28 +1,25 @@
 import connectToDB from "@/app/dbconfig/db";
+import { validateRefreshToken } from "@/app/lib/auth/refreshToken/refreshToken";
+import requireAuth from "@/app/lib/auth/requireAuth";
 import { hashRefreshToken } from "@/app/lib/auth/token/token";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { UnauthorizedError } from "@/app/lib/errors/UnauthorizedError";
 import RefreshToken from "@/app/models/refreshToken.model";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-
-    const refreshToken = request.cookies.get('refreshToken')?.value.toString()
-          if (  !refreshToken) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-   const hashedRefreshToken = hashRefreshToken(refreshToken).toString()
 await connectToDB()
-   const checkRefreshToken = await RefreshToken.findOne({tokenHash:hashedRefreshToken})
- 
-   if(!checkRefreshToken || checkRefreshToken.revokedAt !==null){
-    return NextResponse.json({success:false , message : "invalid Refresh Token "} , {status: 401})
-   }
+    const {userId} = await requireAuth(request)
+     const {session} = await validateRefreshToken(request)
 
 
-   checkRefreshToken.revokedAt = new Date()
+     if (session.userId.toString() !== userId) {
+  throw new UnauthorizedError();
+}
+   session.revokedAt = new Date()
 
-   await checkRefreshToken.save()
+   await session.save()
 
 
    
@@ -44,12 +41,6 @@ await connectToDB()
   } catch (error: any) {
     console.log("Error in Logout:", error.message);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Something went wrong",
-      },
-      { status: 500 }
-    );
+    return  errorHandler(error)
   }
 }
