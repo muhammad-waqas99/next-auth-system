@@ -9,7 +9,9 @@ export function proxy(request: NextRequest) {
     path === "/verify-email" ||
     path === "/verify-email-sent" ||
     path === "/forget-password" ||
-    path === "/reset-password";
+    path === "/reset-password" ||
+    path === "/two-factor/login" ||
+    path === "/two-factor/backup-login";
 
   const accessToken = request.cookies.get("accessToken")?.value;
   const refreshToken = request.cookies.get("refreshToken")?.value;
@@ -21,8 +23,7 @@ export function proxy(request: NextRequest) {
     );
   }
 
-
-  if (!isPublicPath && (!accessToken || !refreshToken)) {
+  if (!isPublicPath && !accessToken && !refreshToken) {
     return NextResponse.redirect(
       new URL("/login", request.nextUrl)
     );
@@ -37,10 +38,21 @@ export const config = {
     "/login",
     "/signup",
     "/profile",
+    "/change-password",
+    "/set-password",
     "/verify-email",
     "/verify-email-sent",
-    "/change-password",
     "/forget-password",
     "/reset-password",
+
+    "/two-factor/setup",
+    "/two-factor/disable",
+    "/two-factor/verify-disable",
+    "/two-factor/backup-disable",
+    "/two-factor/regenerate-password",
+    "/two-factor/verify-regenerate",
+
+    "/two-factor/login",
+    "/two-factor/backup-login",
   ],
 };
