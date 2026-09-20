@@ -1,28 +1,40 @@
 import { NextRequest } from "next/server";
-import { verifyAccessToken } from "./token/token";
 import User from "@/app/models/user.model";
-import { UnauthorizedError } from "../errors/UnauthorizedError";
+import { verifyAccessToken } from "./token/token";
+import { UnauthorizedError } from "@/app/lib/errors/UnauthorizedError";
 
-export default async function requireAuth(request: NextRequest) {
-    const accessToken = request.cookies.get("accessToken")?.value;
+interface RequireAuthOptions {
+  includePassword?: boolean;
+}
 
-    if (!accessToken) {
-        throw new UnauthorizedError();
-    }
+export default async function requireAuth(
+  request: NextRequest,
+  options: RequireAuthOptions = {}
+) {
+  const { includePassword = false } = options;
 
-    const payload = verifyAccessToken(accessToken);
+  const accessToken = request.cookies.get("accessToken")?.value;
 
-    if (!payload || !payload.id) {
-        throw new UnauthorizedError();
-    }
+  if (!accessToken) {
+    throw new UnauthorizedError();
+  }
 
-    const userId = payload.id;
+  const payload = verifyAccessToken(accessToken);
 
-    const user = await User.findById(userId);
+  if (!payload?.id) {
+    throw new UnauthorizedError();
+  }
 
-    if (!user) {
-        throw new UnauthorizedError();
-    }
+  const user = await User.findById(payload.id).select(
+    includePassword ? "+password" : "-password"
+  );
 
-    return { user, userId };
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+
+  return {
+    user,
+    userId: payload.id,
+  };
 }

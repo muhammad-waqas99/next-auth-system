@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import connectToDB from "@/app/dbconfig/db";
 import { verifyAccessToken } from "@/app/lib/auth/token/token";
 import BackupCode from "@/app/models/backupCode.model";
+import requireAuth from "@/app/lib/auth/requireAuth";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
 
 interface TokenPayload {
   id: string;
@@ -12,26 +14,11 @@ interface TokenPayload {
 
 export async function GET(request: NextRequest) {
   try {
-    const accessToken = request.cookies.get("accessToken")?.value;
-
- 
-    if (!accessToken) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Authentication token is missing",
-        },
-        { status: 401 }
-      );
-    }
-
- const jwtUserDetails = verifyAccessToken(accessToken)
-
-    const { id: userID } = jwtUserDetails as TokenPayload;
+  const {userId } =await requireAuth(request)
 
     await connectToDB();
 
-    const currentUser = await User.findById(userID)
+    const currentUser = await User.findById(userId)
       .select("-password");
 
 
@@ -47,7 +34,7 @@ export async function GET(request: NextRequest) {
       
 let backupCodesRemaining  =0
 if(currentUser.twoFactorEnabled){
-  const backupCodes =await BackupCode.findOne({userId :userID})
+  const backupCodes =await BackupCode.findOne({userId :userId})
 
   if(!backupCodes){
     backupCodesRemaining =0
@@ -72,12 +59,6 @@ if(currentUser.twoFactorEnabled){
   } catch (error: any) {
     console.log("Something went wrong:", error.message);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Invalid or expired authentication token",
-      },
-      { status: 401 }
-    );
+    return errorHandler(error)
   }
 }

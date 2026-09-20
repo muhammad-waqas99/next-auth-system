@@ -4,6 +4,8 @@ import connectToDB from "@/app/dbconfig/db";
 import User from "@/app/models/user.model";
 import bcrypt from "bcryptjs";
 import { changePasswordSchema } from "@/app/lib/validationSchema/auth.schema";
+import requireAuth from "@/app/lib/auth/requireAuth";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
 
 interface TokenPayload {
   id: string;
@@ -48,63 +50,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const accessToken = request.cookies.get("accessToken")?.value;
+  
 
-    if (!accessToken) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid or empty authentication token",
-        },
-        { status: 401 }
-      );
-    }
+    const {user} = await requireAuth(request,{
+      includePassword :true
+    })
 
-    const decodedToken = jwt.verify(
-      accessToken,
-      process.env.JWT_SECRET!
-    );
 
-    if (typeof decodedToken === "string") {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid token payload",
-        },
-        { status: 401 }
-      );
-    }
 
-    const tokenPayload = decodedToken as TokenPayload;
-
-    if (
-      !tokenPayload.id ||
-      tokenPayload.type !== "access"
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid access token",
-        },
-        { status: 401 }
-      );
-    }
-
-    const userID = tokenPayload.id;
-
-    await connectToDB();
-
-    const user = await User.findById(userID);
-
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "User not found",
-        },
-        { status: 404 }
-      );
-    }
+  
 
     if (!user.password) {
       return NextResponse.json(
@@ -164,12 +118,6 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.log("Change password error:", error.message);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Something went wrong",
-      },
-      { status: 500 }
-    );
+      return errorHandler(error)
   }
 }
