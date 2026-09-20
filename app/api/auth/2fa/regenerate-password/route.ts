@@ -1,59 +1,18 @@
 import connectToDB from "@/app/dbconfig/db";
+import requireAuth from "@/app/lib/auth/requireAuth";
 import { generateRegenerateChallenge, hashRefreshToken, hashRegenerateChallenge } from "@/app/lib/auth/token/token";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
 import RegenerateChallenge from "@/app/models/backupCodeRegenerateChallenge.model";
-import RefreshToken from "@/app/models/refreshToken.model";
-import User from "@/app/models/user.model";
+
 import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request:NextRequest){
 try {
-         const refreshToken = request.cookies
-      .get("refreshToken")
-      ?.value.toString();
-
-    if (!refreshToken) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Unauthorized",
-        },
-        { status: 401 }
-      );
-    }
-
-    await connectToDB();
-
-    const hashedRefreshToken = hashRefreshToken(refreshToken);
-
-    const refreshTokenCheck = await RefreshToken.findOne({
-      tokenHash: hashedRefreshToken,
-    });
-
-    if (!refreshTokenCheck) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid or expired refresh token",
-        },
-        { status: 401 }
-      );
-    }
-
-    const userId = refreshTokenCheck.userId.toString();
-
-    const user = await User.findById(userId);
-    
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Unauthorized",
-        },
-        { status: 401 }
-      );
-    }
-
+  await connectToDB()
+ const {user , userId} = await requireAuth(request,{
+  includePassword:true
+ })
   
 if (!user.twoFactorEnabled || !user.twoFactorSecret)  {
       return NextResponse.json(
@@ -124,13 +83,7 @@ if (!user.twoFactorEnabled || !user.twoFactorSecret)  {
 } catch (error: any) {
     console.log("Regenerate Password  error:", error.message);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Something went wrong. Please try again later.",
-      },
-      { status: 500 }
-    );
+       return errorHandler(error)
   }
 
 

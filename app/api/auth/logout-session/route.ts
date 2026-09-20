@@ -1,5 +1,7 @@
 import connectToDB from "@/app/dbconfig/db";
+import requireAuth from "@/app/lib/auth/requireAuth";
 import { verifyAccessToken } from "@/app/lib/auth/token/token";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
 import RefreshToken from "@/app/models/refreshToken.model";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -12,18 +14,8 @@ try {
         return NextResponse.json({success : false , message: "Session Id Required"} , {status:404})
      }
 
-     const accessToken = request.cookies.get("accessToken")?.value;
-
-if (!accessToken) {
-  return NextResponse.json(
-    { success: false, message: "Access token required" },
-    { status: 401 }
-  );
-}
-
-const accessTokenData = verifyAccessToken(accessToken);
-const userId = accessTokenData.id;
-await connectToDB()
+ await connectToDB()
+ const {userId}=await requireAuth(request)
     const session = await RefreshToken.updateOne({userId ,sessionId, revokedAt: null}, {revokedAt:new Date()})
 if (session.matchedCount === 0) {
   return NextResponse.json(
@@ -36,12 +28,6 @@ if (session.matchedCount === 0) {
 } catch (error: any) {
     console.log("Error in Logout Session:", error.message);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Something went wrong",
-      },
-      { status: 500 }
-    );
+    return errorHandler(error)
   }
 }

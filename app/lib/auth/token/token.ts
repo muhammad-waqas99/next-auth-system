@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken" 
 import crypto from 'crypto' 
+import { UnauthorizedError } from "../../errors/UnauthorizedError"
 type Payload ={ 
     id:string, 
     type:string 
@@ -32,7 +33,7 @@ export function verifyAccessToken(accessToken:string){
  
           
             if (typeof accessTokenDetails === "string") { 
-                 throw new Error("invalid or expire accessToken") 
+                 throw new UnauthorizedError()
             } 
         return accessTokenDetails 
  
@@ -40,7 +41,7 @@ export function verifyAccessToken(accessToken:string){
          
     } catch (error:any) { 
         console.log(`Error in verifyAccessToken : Error  ${error.message}`) 
-        throw new Error("invalid or expire accessToken") 
+        throw new UnauthorizedError()
     } 
  
  

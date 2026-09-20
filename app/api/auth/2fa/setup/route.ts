@@ -6,48 +6,16 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { generateSecret, generateURI } from "otplib";
 import QRCode from "qrcode";
+import requireAuth from "@/app/lib/auth/requireAuth";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
 
 export async function POST(request: NextRequest) {
   try {
-    const refreshToken = request.cookies
-      .get("refreshToken")
-      ?.value.toString();
+ await connectToDB()
+ const {user } = await requireAuth(request ,{
+  includePassword:true
+ })
 
-    if (!refreshToken) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    await connectToDB();
-
-    const hashedRefreshToken = hashRefreshToken(refreshToken).toString();
-
-    const refreshTokenCheck = await RefreshToken.findOne({
-      tokenHash: hashedRefreshToken,
-    });
-
-    if (!refreshTokenCheck) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid or expired refresh token",
-        },
-        { status: 401 }
-      );
-    }
-
-    const userId = refreshTokenCheck.userId;
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
 
     if (user.twoFactorEnabled) {
       return NextResponse.json(
@@ -160,12 +128,6 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.log("2FA setup error:", error.message);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Something went wrong. Please try again later.",
-      },
-      { status: 500 }
-    );
+ return errorHandler(error)
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import User from "@/app/models/user.model";
 import { verifyAccessToken } from "./token/token";
 import { UnauthorizedError } from "@/app/lib/errors/UnauthorizedError";
+import connectToDB from "@/app/dbconfig/db";
 
 interface RequireAuthOptions {
   includePassword?: boolean;
@@ -24,7 +25,7 @@ export default async function requireAuth(
   if (!payload?.id) {
     throw new UnauthorizedError();
   }
-
+  await connectToDB()
   const user = await User.findById(payload.id).select(
     includePassword ? "+password" : "-password"
   );

@@ -34,7 +34,8 @@ export default function Profile() {
     isVerified: false,
     authProvider: "",
     twoFactorStatus: false,
-    backupCodesRemaining:0
+    backupCodesRemaining:0,
+
   });
 
   const [sessions, setSessions] = useState<any[]>([]);
@@ -193,6 +194,10 @@ const onLogoutSession = async (sessionId: string) => {
             <p className="text-gray-300">
               <span className="font-semibold">Email:</span>{" "}
               {user.email}
+            </p>
+            <p className="text-gray-300 uppercase font-bold">
+         
+              {user.authProvider}
             </p>
 
             <p

@@ -1,5 +1,7 @@
 import connectToDB from "@/app/dbconfig/db";
+import requireAuth from "@/app/lib/auth/requireAuth";
 import { generateDisableChallenge, hashDisableChallenge, hashRefreshToken } from "@/app/lib/auth/token/token";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
 import RefreshToken from "@/app/models/refreshToken.model";
 import DisableChallenge from "@/app/models/twoFactorDisableChallenge.model";
 import User from "@/app/models/user.model";
@@ -16,52 +18,10 @@ export async function POST(request : NextRequest){
         if(!password){
             return NextResponse.json({success : false ,message: "password is Required"} , {status:400})
         }
-
-const refreshToken = request.cookies
-      .get("refreshToken")
-      ?.value.toString();
-
-    if (!refreshToken) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Unauthorized",
-        },
-        { status: 401 }
-      );
-    }
-
-    await connectToDB();
-
-    const hashedRefreshToken = hashRefreshToken(refreshToken).toString();
-
-    const refreshTokenCheck = await RefreshToken.findOne({
-      tokenHash: hashedRefreshToken,
-    });
-
-    if (!refreshTokenCheck) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid or expired refresh token",
-        },
-        { status: 401 }
-      );
-    }
-
-    const userId = refreshTokenCheck.userId;
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Unauthorized",
-        },
-        { status: 401 }
-      );
-    }
+await connectToDB()
+ const {user } = await requireAuth(request ,{
+  includePassword:true
+ })
     if (!user.password) {
     return NextResponse.json(
         {
@@ -115,12 +75,6 @@ const refreshToken = request.cookies
     }catch (error: any) {
     console.log("2FA verification error:", error.message);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Something went wrong. Please try again later.",
-      },
-      { status: 500 }
-    );
+    return errorHandler(error)
   }
 }

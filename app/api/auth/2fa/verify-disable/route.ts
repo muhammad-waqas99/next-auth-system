@@ -9,6 +9,9 @@ import DisableChallenge from "@/app/models/twoFactorDisableChallenge.model";
 import User from "@/app/models/user.model";
 import { verify } from "otplib";
 import { NextRequest, NextResponse } from "next/server";
+import BackupCode from "@/app/models/backupCode.model";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
+import requireAuth from "@/app/lib/auth/requireAuth";
 
 interface ReqBody {
   challenge: string;
@@ -62,37 +65,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const refreshToken = request.cookies.get("refreshToken")?.value;
-
-    if (!refreshToken) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Unauthorized",
-        },
-        { status: 401 }
-      );
-    }
-
-    await connectToDB();
-
-    const hashedRefreshToken = hashRefreshToken(refreshToken);
-
-    const refreshTokenCheck = await RefreshToken.findOne({
-      tokenHash: hashedRefreshToken,
-    });
-
-    if (!refreshTokenCheck) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid or expired refresh token",
-        },
-        { status: 401 }
-      );
-    }
-
-    const currentUserId = refreshTokenCheck.userId;
+    await connectToDB()
+ const {userId , user} = await requireAuth(request)
+    const currentUserId = userId
 
     const challengeHash = hashDisableChallenge(challenge);
 
@@ -143,7 +118,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await User.findById(currentUserId);
 
     if (!user) {
       return NextResponse.json(
@@ -183,7 +157,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Backup code verification
+
     if (backupCode) {
       const backupCodeConsumed = await consumeBackupCode(
         currentUserId.toString(),
@@ -203,6 +177,10 @@ export async function POST(request: NextRequest) {
 
     disableChallenge.usedAt = new Date();
     await disableChallenge.save();
+    await BackupCode.deleteOne({
+  userId: currentUserId,
+});
+
 
     user.twoFactorEnabled = false;
     user.twoFactorSecret = null;
@@ -219,13 +197,6 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.log("Verify-Disable Error:", error.message);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message:
-          "Something went wrong. Please try again later.",
-      },
-      { status: 500 }
-    );
+return errorHandler(error)
   }
 }
