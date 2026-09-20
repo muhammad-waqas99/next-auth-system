@@ -5,7 +5,8 @@ import { changePasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
 import { InvalidPasswordError } from "@/app/lib/errors/InvalidPasswordError";
-import { hashPassword } from "@/app/lib/auth/password/password";
+import { comparePassword, hashPassword } from "@/app/lib/auth/password/password";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 
 interface TokenPayload {
   id: string;
@@ -20,35 +21,14 @@ interface ChangePasswordBody {
 
 export async function POST(request: NextRequest) {
   try {
-    const reqBody: ChangePasswordBody = await request.json();
+const body :ChangePasswordBody = await request.json();
 
-    const result = changePasswordSchema.safeParse(reqBody);
+const { currentPassword, confirmPassword, newPassword } = validateRequest(
+  changePasswordSchema,
+  body
+);
 
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: result.error.issues[0].message,
-        },
-        { status: 400 }
-      );
-    }
 
-    const {
-      currentPassword,
-      newPassword,
-      confirmPassword,
-    } = result.data;
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "All fields are required",
-        },
-        { status: 400 }
-      );
-    }
 
   
 

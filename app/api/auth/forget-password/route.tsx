@@ -4,34 +4,18 @@ import User from "@/app/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
 import sendMail from "@/app/lib/mail";
 import { forgotPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 
 export async function POST(request: NextRequest) {
   try {
-    const reqBody = await request.json();
-    const result = forgotPasswordSchema.safeParse(reqBody);
-    
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: result.error.issues[0].message,
-        },
-        { status: 400 }
-      );
-    }
-    
-    const { email } = result.data;
+const body = await request.json();
+
+const { email } = validateRequest(
+  forgotPasswordSchema,
+  body
+);
 
 
-    if (!email) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Email is required",
-        },
-        { status: 400 }
-      );
-    }
 
     await connectToDB();
 

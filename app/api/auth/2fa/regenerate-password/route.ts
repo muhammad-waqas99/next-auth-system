@@ -3,6 +3,8 @@ import { comparePassword } from "@/app/lib/auth/password/password";
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { generateRegenerateChallenge,  hashRegenerateChallenge } from "@/app/lib/auth/token/token";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { regeneratePasswordSchema } from "@/app/lib/validationSchema/auth.schema";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 import RegenerateChallenge from "@/app/models/backupCodeRegenerateChallenge.model";
 
 import bcrypt from "bcryptjs";
@@ -25,20 +27,15 @@ if (!user.twoFactorEnabled || !user.twoFactorSecret)  {
       );
     }
 
-    
-        const reqBody = await request.json();
-    
-        const password = reqBody.password;
-    
-        if (!password) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: "Password is required",
-            },
-            { status: 400 }
-          );
-        }
+const body = await request.json();
+
+const { password } = validateRequest(
+  regeneratePasswordSchema,
+  body
+);
+
+
+
     
         if (!user.password) {
           return NextResponse.json(

@@ -6,6 +6,8 @@ import {
   hashRegenerateChallenge,
 } from "@/app/lib/auth/token/token";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { verifyOtpSchema } from "@/app/lib/validationSchema/auth.schema";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 import BackupCode from "@/app/models/backupCode.model";
 import RegenerateChallenge from "@/app/models/backupCodeRegenerateChallenge.model";
 ;
@@ -17,31 +19,12 @@ export async function POST(request: NextRequest) {
     
 
     const {user, userId} = await requireAuth(request)
+const body = await request.json();
 
-
-    const reqBody = await request.json();
-
-    const { challenge, otp } = reqBody;
-
-    if (!challenge || !otp) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Challenge and OTP are required",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!/^\d{6}$/.test(otp)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "OTP must be 6 digits",
-        },
-        { status: 400 }
-      );
-    }
+const {challenge,otp  } = validateRequest(
+  verifyOtpSchema,
+  body
+);
 
     const challengeHash = hashRegenerateChallenge(challenge);
 

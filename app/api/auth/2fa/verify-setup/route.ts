@@ -2,6 +2,8 @@
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { generateBackupCodes } from "@/app/lib/auth/token/token";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { verifySetupSchema } from "@/app/lib/validationSchema/auth.schema";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 import BackupCode from "@/app/models/backupCode.model";
 
 
@@ -52,21 +54,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+const body = await request.json();
 
-    const reqBody = await request.json();
-
-    const { otpSecret, otp } = reqBody;
-
-    if (!otpSecret || !otp) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "OTP and setup secret are required",
-        },
-        { status: 400 }
-      );
-    }
-
+const {otpSecret,otp  } = validateRequest(
+  verifySetupSchema,
+  body
+);
 
     if (user.pendingTwoFactorSecret !== otpSecret) {
       return NextResponse.json(

@@ -6,22 +6,21 @@ import { getDeviceInfo } from "@/app/lib/auth/device/getDeviceInfo";
 import { createLoginSession } from "@/app/lib/auth/login/createLoginSession";
 
 import LoginChallenge from "@/app/models/loginChallenge.model";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
+import { backupLoginSchema } from "@/app/lib/validationSchema/auth.schema";
+import { setAuthCookies } from "@/app/lib/auth/cookies/cookies";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
 
 export async function POST(request: NextRequest) {
   try {
-    const reqBody = await request.json();
+const body = await request.json();
 
-    const { challenge, backupCode } = reqBody;
+const { challenge, backupCode } = validateRequest(
+  backupLoginSchema,
+  body
+);
 
-    if (!challenge || !backupCode) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "challenge and backup code required",
-        },
-        { status: 400 }
-      );
-    }
+
 
 
     const challengeHash = hashLoginChallenge(challenge);
@@ -123,32 +122,12 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
 
-    response.cookies.set({
-      name: "accessToken",
-      value: accessToken,
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 60 * 15,
-    });
-
-    response.cookies.set({
-      name: "refreshToken",
-      value: refreshToken,
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
-    });
+setAuthCookies(response , accessToken , refreshToken)
 
     return response;
   } catch (error: any) {
     console.log("Backup Code Login error:", error.message);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Something went wrong. Please try again later.",
-      },
-      { status: 500 }
-    );
+   return errorHandler(error)
   }
 }

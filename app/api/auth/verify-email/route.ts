@@ -2,25 +2,16 @@ import connectToDB from "@/app/dbconfig/db";
 import User from "@/app/models/user.model";
 import { verifyEmailSchema } from "@/app/lib/validationSchema/auth.schema";
 import { NextRequest, NextResponse } from "next/server";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 
 export async function POST(request: NextRequest) {
   try {
-    const reqBody = await request.json();
+const body = await request.json();
 
-
-    const result = verifyEmailSchema.safeParse(reqBody);
-
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: result.error.issues[0].message,
-        },
-        { status: 400 }
-      );
-    }
-
-    const { token } = result.data;
+const {token  } = validateRequest(
+  verifyEmailSchema,
+  body
+);
 
     await connectToDB();
 

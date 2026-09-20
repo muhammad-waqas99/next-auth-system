@@ -8,40 +8,19 @@ import sendMail from "@/app/lib/mail";
 import { signupSchema } from "@/app/lib/validationSchema/auth.schema";
 import { hashPassword } from "@/app/lib/auth/password/password";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 
-interface ReqBody {
-  name: string;
-  email: string;
-  password: string;
-}
+
 
 export async function POST(request: NextRequest) {
   try {
-    const reqBody: ReqBody = await request.json();
-    const result = signupSchema.safeParse(reqBody);
-    
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: result.error.issues[0].message,
-        },
-        { status: 400 }
-      );
-    }
-    
+const body = await request.json();
 
-    const { name, email, password } = result.data;
+const { name, email, password } = validateRequest(
+  signupSchema,
+  body
+);
 
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "All fields are required",
-        },
-        { status: 400 }
-      );
-    }
 
     await connectToDB();
 

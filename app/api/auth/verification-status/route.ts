@@ -2,27 +2,16 @@ import connectToDB from "@/app/dbconfig/db";
 import User from "@/app/models/user.model";
 import { verificationStatusSchema } from "@/app/lib/validationSchema/auth.schema";
 import { NextRequest, NextResponse } from "next/server";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 
 export async function POST(request: NextRequest) {
   try {
-    const reqBody = await request.json();
+const body = await request.json();
 
-    const result = verificationStatusSchema.safeParse(reqBody);
-
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          isVerified: false,
-          message: result.error.issues[0].message,
-        },
-        { status: 400 }
-      );
-    }
-
-
-    const { email } = result.data;
-
+const {email } = validateRequest(
+  verificationStatusSchema,
+  body
+);
     await connectToDB();
 
     const user = await User.findOne({ email });
@@ -60,13 +49,6 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.log("Verification status error:", error.message);
 
-    return NextResponse.json(
-      {
-        success: false,
-        isVerified: false,
-        message: "Something went wrong. Please try again later.",
-      },
-      { status: 500 }
-    );
+  return errorHandler(error)
   }
 }

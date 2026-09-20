@@ -1,11 +1,12 @@
 
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import { generateSecret, generateURI } from "otplib";
 import QRCode from "qrcode";
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
 import { comparePassword } from "@/app/lib/auth/password/password";
+import { setupTwoFactorSchema } from "@/app/lib/validationSchema/auth.schema";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,19 +50,15 @@ export async function POST(request: NextRequest) {
       await user.save();
     }
 
-    const reqBody = await request.json();
+const body = await request.json();
 
-    const password = reqBody.password;
+const {  password } = validateRequest(
+  setupTwoFactorSchema,
+  body
+);
 
-    if (!password) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Password is required",
-        },
-        { status: 400 }
-      );
-    }
+
+
 
     if (!user.password) {
       return NextResponse.json(

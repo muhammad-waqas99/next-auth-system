@@ -8,25 +8,18 @@ import requireAuth from "@/app/lib/auth/requireAuth";
 
 import { errorHandler } from "@/app/lib/errors/errorHandler";
 import { hashPassword } from "@/app/lib/auth/password/password";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 
 
 export async function POST(request: NextRequest) {
   try {
-    const reqBody = await request.json();
+const body = await request.json();
 
-    const result = setPasswordSchema.safeParse(reqBody);
+const { newPassword } = validateRequest(
+  setPasswordSchema,
+  body
+);
 
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: result.error.issues[0].message,
-        },
-        { status: 400 }
-      );
-    }
-
-    const { newPassword } = result.data;
 
 
        const {user } = await requireAuth(request,{

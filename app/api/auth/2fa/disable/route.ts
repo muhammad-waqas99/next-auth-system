@@ -3,6 +3,8 @@ import { comparePassword } from "@/app/lib/auth/password/password";
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { generateDisableChallenge, hashDisableChallenge } from "@/app/lib/auth/token/token";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { disableTwoFactorSchema } from "@/app/lib/validationSchema/auth.schema";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 
 import DisableChallenge from "@/app/models/twoFactorDisableChallenge.model";
 
@@ -13,12 +15,15 @@ export async function POST(request : NextRequest){
 
     try {
         
-        const reqBody = await request.json()
-        const password = reqBody.password
+const body = await request.json();
 
-        if(!password){
-            return NextResponse.json({success : false ,message: "password is Required"} , {status:400})
-        }
+const {  password } = validateRequest(
+  disableTwoFactorSchema,
+  body
+);
+
+
+
 
  const {user } = await requireAuth(request ,{
   includePassword:true

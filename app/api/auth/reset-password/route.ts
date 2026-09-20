@@ -5,39 +5,20 @@ import crypto from "node:crypto";
 import connectToDB from "@/app/dbconfig/db";
 import { resetPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 import { hashPassword } from "@/app/lib/auth/password/password";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 
 export async function POST(request: NextRequest) {
   try {
-    const reqBody = await request.json();
-  console.log("reset api hit")
+const body = await request.json();
 
-    const result = resetPasswordSchema.safeParse(reqBody);
-    
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: result.error.issues[0].message,
-        },
-        { status: 400 }
-      );
-    }
-        const {
-      password,
-      plainToken,
-      confirmPassword
-    } = result.data;
+const { plainToken, confirmPassword, password } = validateRequest(
+  resetPasswordSchema,
+  body
+);
 
 
-    if (!password || !plainToken || !confirmPassword) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "All fields are required",
-        },
-        { status: 400 }
-      );
-    }
+
+
 
     const hashToken = crypto
       .createHash("sha256")

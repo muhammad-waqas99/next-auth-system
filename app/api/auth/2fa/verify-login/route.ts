@@ -12,37 +12,21 @@ import {
 } from "@/app/lib/auth/token/token";
 import { UAParser } from "ua-parser-js";
 import { verify } from "otplib";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
+import { verifyOtpSchema } from "@/app/lib/validationSchema/auth.schema";
+import { setAuthCookies } from "@/app/lib/auth/cookies/cookies";
 
-interface ReqBody {
-  challenge: string;
-  otp: string;
-}
+
 
 export async function POST(request: NextRequest) {
   try {
-    const reqBody: ReqBody = await request.json();
+const body = await request.json();
 
-    const { challenge, otp } = reqBody;
+const {challenge,otp  } = validateRequest(
+  verifyOtpSchema,
+  body
+);
 
-    if (!challenge || !otp) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Challenge and OTP are required",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!/^\d{6}$/.test(otp)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "OTP must be 6 digits",
-        },
-        { status: 400 }
-      );
-    }
 
     await connectToDB();
 
@@ -172,22 +156,7 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 }
     );
-
-    response.cookies.set({
-      name: "accessToken",
-      value: accessToken,
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 60 * 15,
-    });
-
-    response.cookies.set({
-      name: "refreshToken",
-      value: refreshToken,
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
-    });
+ setAuthCookies(response ,accessToken , refreshToken)
 
     return response;
   } catch (error: any) {

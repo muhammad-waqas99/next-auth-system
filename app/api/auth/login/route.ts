@@ -10,6 +10,7 @@ import { createLoginSession } from "@/app/lib/auth/login/createLoginSession";
 import { getDeviceInfo } from "@/app/lib/auth/device/getDeviceInfo";
 import { setAuthCookies } from "@/app/lib/auth/cookies/cookies";
 import { comparePassword } from "@/app/lib/auth/password/password";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 
 interface ReqBody {
   email: string;
@@ -18,31 +19,15 @@ interface ReqBody {
 
 export async function POST(request: NextRequest) {
   try {
-    const reqBody: ReqBody = await request.json();
+const body :ReqBody= await request.json();
 
-    const result = loginSchema.safeParse(reqBody);
+const { email, password } = validateRequest(
+  loginSchema,
+  body
+);
 
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: result.error.issues[0].message,
-        },
-        { status: 400 }
-      );
-    }
 
-    const { email, password } = result.data;
 
-    if (!email || !password) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "All fields are required",
-        },
-        { status: 400 }
-      );
-    }
 
     await connectToDB();
 

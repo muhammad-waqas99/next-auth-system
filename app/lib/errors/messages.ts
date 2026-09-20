@@ -5,7 +5,7 @@ export const ERROR_MESSAGES = {
   USER_NOT_FOUND: "User not found.",
   ACCOUNT_ALREADY_EXISTS: "An account with this email already exists.",
   EMAIL_NOT_VERIFIED: "Please verify your email first.",
-
+VALIDATION_ERROR: "Invalid request data.",
 
   ACCESS_TOKEN_MISSING: "Your session has expired. Please login again.",
   ACCESS_TOKEN_INVALID: "Your session is invalid. Please login again.",

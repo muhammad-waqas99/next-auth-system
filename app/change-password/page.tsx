@@ -10,7 +10,7 @@ export default function ChangePassword() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const router = useRouter();
   const [formDetails, setFormDetails] = useState({
-    currentpassword: "",
+    currentPassword: "",
     confirmPassword: "",
     newPassword: "",
   });
@@ -24,7 +24,7 @@ export default function ChangePassword() {
 
     try {
 
-              e.preventDefault();
+              e.preventDefault(); 
 setFormErrors({});
 
 const result = validateForm(changePasswordSchema,formDetails);

@@ -1,7 +1,7 @@
-import connectToDB from "@/app/dbconfig/db";
+
 import {
   hashDisableChallenge,
-  hashRefreshToken,
+
 } from "@/app/lib/auth/token/token";
 import { consumeBackupCode } from "@/app/lib/auth/backup-code/consumeBackupCode";
 
@@ -10,38 +10,21 @@ import User from "@/app/models/user.model";
 import { verify } from "otplib";
 import { NextRequest, NextResponse } from "next/server";
 import requireAuth from "@/app/lib/auth/requireAuth";
+import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
+import { verifyDisableSchema } from "@/app/lib/validationSchema/auth.schema";
 
-interface ReqBody {
-  challenge: string;
-  otp?: string;
-  backupCode?: string;
-}
+
 
 export async function POST(request: NextRequest) {
   try {
-    const reqBody: ReqBody = await request.json();
+const body = await request.json();
 
-    const { challenge, otp, backupCode } = reqBody;
+const {backupCode,challenge,otp  } = validateRequest(
+  verifyDisableSchema,
+  body
+);
 
-    if (!challenge) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Disable challenge is required",
-        },
-        { status: 400 }
-      );
-    }
 
-    if (!otp && !backupCode) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "OTP or backup code is required",
-        },
-        { status: 400 }
-      );
-    }
 
     if (otp && backupCode) {
       return NextResponse.json(
@@ -53,15 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (otp && !/^\d{6}$/.test(otp)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "OTP must be 6 digits",
-        },
-        { status: 400 }
-      );
-    }
+
       const{userId} =await requireAuth(request)
 
     
