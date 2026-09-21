@@ -1,80 +1,96 @@
-
-import { clearAuthCookies, setAuthCookies } from "@/app/lib/auth/cookies/cookies";
+import {
+  clearAuthCookies,
+  setAuthCookies,
+} from "@/app/lib/auth/cookies/cookies";
 import { validateRefreshToken } from "@/app/lib/auth/refreshToken/refreshToken";
-import { createAccessToken, generateRefreshToken, hashRefreshToken,  } from "@/app/lib/auth/token/token";
+import {
+  createAccessToken,
+  generateRefreshToken,
+  hashRefreshToken,
+} from "@/app/lib/auth/token/token";
 
 import { errorHandler } from "@/app/lib/errors/errorHandler";
 import { UnauthorizedError } from "@/app/lib/errors/UnauthorizedError";
+import {
+  SUCCESS_CODES,
+  SUCCESS_MESSAGES,
+} from "@/app/lib/errors/messages";
 import RefreshToken from "@/app/models/refreshToken.model";
 import { NextRequest, NextResponse } from "next/server";
 
-
-export async function POST(request : NextRequest){
-
-
+export async function POST(request: NextRequest) {
   try {
-    
-      const {session} = await validateRefreshToken(request)
+    const { session } = await validateRefreshToken(request);
 
-     const userId = session.userId.toString()
-  const newRefreshToken = generateRefreshToken()
-  const newHashedRefreshToken = hashRefreshToken(newRefreshToken).toString()
-  const accessPayload={
-    id:userId,
-    type:"access"
-  }
-  const newAccessToken = createAccessToken(accessPayload)
+    const userId = session.userId.toString();
 
+    const newRefreshToken = generateRefreshToken();
+    const newHashedRefreshToken =
+      hashRefreshToken(newRefreshToken).toString();
 
- const currentDate = new Date()
-   const expiryDate = new Date(currentDate.getTime() + 6.048e+8)
+    const accessPayload = {
+      id: userId,
+      type: "access",
+    };
 
- 
+    const newAccessToken = createAccessToken(accessPayload);
 
-   session.revokedAt = currentDate;
+    const currentDate = new Date();
+    const expiryDate = new Date(
+      currentDate.getTime() + 6.048e8
+    );
 
+    session.revokedAt = currentDate;
 
-await session.save()
+    await session.save();
 
-const newRotateRefreshToken = new RefreshToken({
-    expiresAt:expiryDate,
-    sessionExpiresAt:session.sessionExpiresAt,
-    userId:session.userId,
-    tokenHash:newHashedRefreshToken,
-    sessionId:session.sessionId,
-    lastUsedAt:currentDate,
+    const newRotateRefreshToken = new RefreshToken({
+      expiresAt: expiryDate,
+      sessionExpiresAt: session.sessionExpiresAt,
+      userId: session.userId,
+      tokenHash: newHashedRefreshToken,
+      sessionId: session.sessionId,
+      lastUsedAt: currentDate,
       os: session.os,
-  browser: session.browser,
-  device: session.device,
-    
+      browser: session.browser,
+      device: session.device,
+    });
 
-})
+    await newRotateRefreshToken.save();
 
-await newRotateRefreshToken.save()
-  const response = NextResponse.json(
-    { success: true, message: 'Refresh token rotate successfully' },
-    { status: 200 }
-  );
-
-setAuthCookies(response, newAccessToken, newRefreshToken);
-  return response;
-
-} catch (error: any) {
-  console.log("Refresh error:", error.message);
-
-  if (error instanceof UnauthorizedError) {
     const response = NextResponse.json(
       {
-        success: false,
-        code: error.code,
-        message: error.message,
+        success: true,
+        message: SUCCESS_MESSAGES.TOKEN_REFRESHED,
+        code: SUCCESS_CODES.TOKEN_REFRESHED,
       },
-      { status: 401 }
+      { status: 200 }
     );
- clearAuthCookies(response)
+
+    setAuthCookies(response, newAccessToken, newRefreshToken);
 
     return response;
-  }
+  } catch (error: unknown) {
+    console.log(
+      "Refresh error:",
+      error instanceof Error ? error.message : error
+    );
 
-  return errorHandler(error);
-}}
+    if (error instanceof UnauthorizedError) {
+      const response = NextResponse.json(
+        {
+          success: false,
+          code: error.code,
+          message: error.message,
+        },
+        { status: 401 }
+      );
+
+      clearAuthCookies(response);
+
+      return response;
+    }
+
+    return errorHandler(error);
+  }
+}

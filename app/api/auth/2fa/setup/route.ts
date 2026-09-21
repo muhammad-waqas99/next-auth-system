@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { generateSecret, generateURI } from "otplib";
 import QRCode from "qrcode";
@@ -8,24 +7,28 @@ import { comparePassword } from "@/app/lib/auth/password/password";
 import { setupTwoFactorSchema } from "@/app/lib/validationSchema/auth.schema";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 
+import { AppError } from "@/app/lib/errors/AppError";
+import { InvalidPasswordError } from "@/app/lib/errors/InvalidPasswordError";
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  SUCCESS_CODES,
+  SUCCESS_MESSAGES,
+} from "@/app/lib/errors/messages";
+
 export async function POST(request: NextRequest) {
   try {
-
- const {user } = await requireAuth(request ,{
-  includePassword:true
- })
-
+    const { user } = await requireAuth(request, {
+      includePassword: true,
+    });
 
     if (user.twoFactorEnabled) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "2FA is already enabled",
-        },
-        { status: 400 }
+      throw new AppError(
+        ERROR_CODES.TWO_FACTOR_ALREADY_ENABLED,
+        ERROR_MESSAGES.TWO_FACTOR_ALREADY_ENABLED,
+        400
       );
     }
-
 
     if (user.pendingTwoFactorSecret) {
       const now = new Date();
@@ -34,64 +37,48 @@ export async function POST(request: NextRequest) {
         user.pendingTwoFactorExpiresAt &&
         user.pendingTwoFactorExpiresAt > now
       ) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "2FA setup is already in progress",
-          },
-          { status: 400 }
+        throw new AppError(
+          ERROR_CODES.TWO_FACTOR_SETUP_IN_PROGRESS,
+          ERROR_MESSAGES.TWO_FACTOR_SETUP_IN_PROGRESS,
+          400
         );
       }
 
-   
       user.pendingTwoFactorSecret = null;
       user.pendingTwoFactorExpiresAt = null;
 
       await user.save();
     }
 
-const body = await request.json();
+    const body = await request.json();
 
-const {  password } = validateRequest(
-  setupTwoFactorSchema,
-  body
-);
-
-
-
+    const { password } = validateRequest(
+      setupTwoFactorSchema,
+      body
+    );
 
     if (!user.password) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Please set a password before enabling 2FA",
-        },
-        { status: 400 }
+      throw new AppError(
+        ERROR_CODES.PASSWORD_REQUIRED_FOR_2FA_SETUP,
+        ERROR_MESSAGES.PASSWORD_REQUIRED_FOR_2FA_SETUP,
+        400
       );
     }
 
-  
     const isPasswordCorrect = await comparePassword(
       password,
       user.password
     );
 
     if (!isPasswordCorrect) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Incorrect password",
-        },
-        { status: 401 }
-      );
+      throw new InvalidPasswordError();
     }
 
     const userEmail = user.email;
     const issuer = process.env.ISSUER!;
 
     const secret = generateSecret();
-      
-  
+
     const pendingTwoFactorExpiresAt = new Date(
       Date.now() + 10 * 60 * 1000
     );
@@ -107,22 +94,24 @@ const {  password } = validateRequest(
       secret,
     });
 
-   
-
     const qrCode = await QRCode.toDataURL(uri);
 
     return NextResponse.json(
       {
         success: true,
-        message: "2FA setup started",
+        message: SUCCESS_MESSAGES.TWO_FACTOR_SETUP_STARTED,
+        code: SUCCESS_CODES.TWO_FACTOR_SETUP_STARTED,
         qrCode,
         secret,
       },
       { status: 200 }
     );
-  } catch (error: any) {
-    console.log("2FA setup error:", error.message);
+  } catch (error: unknown) {
+    console.log(
+      "2FA setup error:",
+      error instanceof Error ? error.message : error
+    );
 
- return errorHandler(error)
+    return errorHandler(error);
   }
 }

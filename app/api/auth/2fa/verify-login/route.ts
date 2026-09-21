@@ -15,18 +15,23 @@ import { verify } from "otplib";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 import { verifyOtpSchema } from "@/app/lib/validationSchema/auth.schema";
 import { setAuthCookies } from "@/app/lib/auth/cookies/cookies";
-
-
+import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { AppError } from "@/app/lib/errors/AppError";
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  SUCCESS_CODES,
+  SUCCESS_MESSAGES,
+} from "@/app/lib/errors/messages";
 
 export async function POST(request: NextRequest) {
   try {
-const body = await request.json();
+    const body = await request.json();
 
-const {challenge,otp  } = validateRequest(
-  verifyOtpSchema,
-  body
-);
-
+    const { challenge, otp } = validateRequest(
+      verifyOtpSchema,
+      body
+    );
 
     await connectToDB();
 
@@ -37,70 +42,58 @@ const {challenge,otp  } = validateRequest(
     });
 
     if (!loginChallenge) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid login challenge",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.INVALID_LOGIN_CHALLENGE,
+        ERROR_MESSAGES.INVALID_LOGIN_CHALLENGE,
+        401
       );
     }
 
     if (loginChallenge.usedAt) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Login challenge has already been used",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.LOGIN_CHALLENGE_USED,
+        ERROR_MESSAGES.LOGIN_CHALLENGE_USED,
+        401
       );
     }
 
     if (loginChallenge.expiresAt < new Date()) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Login challenge has expired",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.LOGIN_CHALLENGE_EXPIRED,
+        ERROR_MESSAGES.LOGIN_CHALLENGE_EXPIRED,
+        401
       );
     }
 
     const user = await User.findById(loginChallenge.userId);
 
     if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "User not found",
-        },
-        { status: 404 }
+      throw new AppError(
+        ERROR_CODES.USER_NOT_FOUND,
+        ERROR_MESSAGES.USER_NOT_FOUND,
+        404
       );
     }
 
     if (!user.twoFactorEnabled || !user.twoFactorSecret) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Two-factor authentication is not enabled",
-        },
-        { status: 400 }
+      throw new AppError(
+        ERROR_CODES.TWO_FACTOR_NOT_ENABLED,
+        ERROR_MESSAGES.TWO_FACTOR_NOT_ENABLED,
+        400
       );
     }
 
     const result = await verify({
       secret: user.twoFactorSecret,
       token: otp,
-       epochTolerance: 30,
+      epochTolerance: 30,
     });
 
     if (!result.valid) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid OTP",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.INVALID_OTP,
+        ERROR_MESSAGES.INVALID_OTP,
+        401
       );
     }
 
@@ -152,22 +145,21 @@ const {challenge,otp  } = validateRequest(
     const response = NextResponse.json(
       {
         success: true,
-        message: "Logged in successfully",
+        message: SUCCESS_MESSAGES.LOGIN_SUCCESS,
+        code: SUCCESS_CODES.LOGIN_SUCCESS,
       },
       { status: 200 }
     );
- setAuthCookies(response ,accessToken , refreshToken)
+
+    setAuthCookies(response, accessToken, refreshToken);
 
     return response;
-  } catch (error: any) {
-    console.log("Verify login 2FA error:", error.message);
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Something went wrong. Please try again later.",
-      },
-      { status: 500 }
+  } catch (error: unknown) {
+    console.log(
+      "Verify login 2FA error:",
+      error instanceof Error ? error.message : error
     );
+
+    return errorHandler(error);
   }
 }

@@ -1,9 +1,15 @@
-
 import { NextRequest, NextResponse } from "next/server";
 
 import BackupCode from "@/app/models/backupCode.model";
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  SUCCESS_CODES,
+  SUCCESS_MESSAGES,
+} from "@/app/lib/errors/messages";
+import { AppError } from "@/app/lib/errors/AppError";
 
 interface TokenPayload {
   id: string;
@@ -12,49 +18,48 @@ interface TokenPayload {
 
 export async function GET(request: NextRequest) {
   try {
-  const {userId,user } =await requireAuth(request)
+    const { userId, user } = await requireAuth(request);
 
-
-
-    const currentUser = user
+    const currentUser = user;
 
     if (!currentUser) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "User not found",
-        },
-        { status: 404 }
+      throw new AppError(
+        ERROR_CODES.USER_NOT_FOUND,
+        ERROR_MESSAGES.USER_NOT_FOUND,
+        404
       );
     }
-      
-let backupCodesRemaining  =0
-if(currentUser.twoFactorEnabled){
-  const backupCodes =await BackupCode.findOne({userId :userId})
 
-  if(!backupCodes){
-    backupCodesRemaining =0
-  }else{
-   backupCodesRemaining = backupCodes?.codes.filter((code)=>{
-   return  code.usedAt ===null
-  }).length
-  }
+    let backupCodesRemaining = 0;
 
+    if (currentUser.twoFactorEnabled) {
+      const backupCodes = await BackupCode.findOne({ userId });
 
-}
+      if (!backupCodes) {
+        backupCodesRemaining = 0;
+      } else {
+        backupCodesRemaining = backupCodes?.codes.filter((code) => {
+          return code.usedAt === null;
+        }).length;
+      }
+    }
 
     return NextResponse.json(
       {
         success: true,
-        message: "Current user details fetched successfully",
+        message: SUCCESS_MESSAGES.CURRENT_USER_DETAILS_FETCHED,
+        code: SUCCESS_CODES.CURRENT_USER_DETAILS_FETCHED,
         user: currentUser,
-        backupCodesRemaining
+        backupCodesRemaining,
       },
       { status: 200 }
     );
-  } catch (error: any) {
-    console.log("Something went wrong:", error.message);
+  } catch (error: unknown) {
+    console.log(
+      "Something went wrong:",
+      error instanceof Error ? error.message : error
+    );
 
-    return errorHandler(error)
+    return errorHandler(error);
   }
 }

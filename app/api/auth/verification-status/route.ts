@@ -3,27 +3,33 @@ import User from "@/app/models/user.model";
 import { verificationStatusSchema } from "@/app/lib/validationSchema/auth.schema";
 import { NextRequest, NextResponse } from "next/server";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { AppError } from "@/app/lib/errors/AppError";
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  SUCCESS_CODES,
+  SUCCESS_MESSAGES,
+} from "@/app/lib/errors/messages";
 
 export async function POST(request: NextRequest) {
   try {
-const body = await request.json();
+    const body = await request.json();
 
-const {email } = validateRequest(
-  verificationStatusSchema,
-  body
-);
+    const { email } = validateRequest(
+      verificationStatusSchema,
+      body
+    );
+
     await connectToDB();
 
     const user = await User.findOne({ email });
 
     if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          isVerified: false,
-          message: "User not found",
-        },
-        { status: 404 }
+      throw new AppError(
+        ERROR_CODES.USER_NOT_FOUND,
+        ERROR_MESSAGES.USER_NOT_FOUND,
+        404
       );
     }
 
@@ -32,7 +38,8 @@ const {email } = validateRequest(
         {
           success: true,
           isVerified: true,
-          message: "Email is already verified",
+          message: SUCCESS_MESSAGES.VERIFICATION_STATUS_FETCHED,
+          code: SUCCESS_CODES.VERIFICATION_STATUS_FETCHED,
         },
         { status: 200 }
       );
@@ -42,13 +49,17 @@ const {email } = validateRequest(
       {
         success: true,
         isVerified: false,
-        message: "Email is not verified yet",
+        message: SUCCESS_MESSAGES.VERIFICATION_STATUS_FETCHED,
+        code: SUCCESS_CODES.VERIFICATION_STATUS_FETCHED,
       },
       { status: 200 }
     );
-  } catch (error: any) {
-    console.log("Verification status error:", error.message);
+  } catch (error: unknown) {
+    console.log(
+      "Verification status error:",
+      error instanceof Error ? error.message : error
+    );
 
-  return errorHandler(error)
+    return errorHandler(error);
   }
 }

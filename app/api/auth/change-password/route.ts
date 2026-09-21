@@ -1,29 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import bcrypt from "bcryptjs";
+
 import { changePasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
 import { InvalidPasswordError } from "@/app/lib/errors/InvalidPasswordError";
 import { comparePassword, hashPassword } from "@/app/lib/auth/password/password";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
+import { AppError } from "@/app/lib/errors/AppError";
+import { ERROR_CODES, ERROR_MESSAGES, SUCCESS_CODES, SUCCESS_MESSAGES } from "@/app/lib/errors/messages";
 
-interface TokenPayload {
-  id: string;
-  type: "access";
-}
 
-interface ChangePasswordBody {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}
 
 export async function POST(request: NextRequest) {
   try {
-const body :ChangePasswordBody = await request.json();
+const body  = await request.json();
 
-const { currentPassword, confirmPassword, newPassword } = validateRequest(
+const { currentPassword, newPassword } = validateRequest(
   changePasswordSchema,
   body
 );
@@ -41,14 +34,11 @@ const { currentPassword, confirmPassword, newPassword } = validateRequest(
   
 
     if (!user.password) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "Password login is not available for this account.",
-        },
-        { status: 400 }
-      );
+     throw new AppError(
+      ERROR_CODES.PASSWORD_LOGIN_UNAVAILABLE,
+      ERROR_MESSAGES.PASSWORD_LOGIN_UNAVAILABLE,
+      400
+     )
     }
 
     const checkPassword =  await comparePassword(
@@ -60,26 +50,6 @@ if (!checkPassword) {
   throw new InvalidPasswordError();
 }
 
-    if (!checkPassword) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Incorrect current password",
-        },
-        { status: 401 }
-      );
-    }
-
-    if (newPassword !== confirmPassword) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "New password and confirm password do not match",
-        },
-        { status: 400 }
-      );
-    }
 
   
 
@@ -91,7 +61,8 @@ if (!checkPassword) {
     return NextResponse.json(
       {
         success: true,
-        message: "Password changed successfully",
+        code:SUCCESS_CODES.PASSWORD_CHANGED,
+        message:SUCCESS_MESSAGES.PASSWORD_CHANGED,
       },
       { status: 200 }
     );

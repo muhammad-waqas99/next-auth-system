@@ -3,15 +3,23 @@ import User from "@/app/models/user.model";
 import { verifyEmailSchema } from "@/app/lib/validationSchema/auth.schema";
 import { NextRequest, NextResponse } from "next/server";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { AppError } from "@/app/lib/errors/AppError";
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  SUCCESS_CODES,
+  SUCCESS_MESSAGES,
+} from "@/app/lib/errors/messages";
 
 export async function POST(request: NextRequest) {
   try {
-const body = await request.json();
+    const body = await request.json();
 
-const {token  } = validateRequest(
-  verifyEmailSchema,
-  body
-);
+    const { token } = validateRequest(
+      verifyEmailSchema,
+      body
+    );
 
     await connectToDB();
 
@@ -20,12 +28,10 @@ const {token  } = validateRequest(
     });
 
     if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid or expired verification token",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.INVALID_VERIFICATION_TOKEN,
+        ERROR_MESSAGES.INVALID_VERIFICATION_TOKEN,
+        401
       );
     }
 
@@ -34,12 +40,10 @@ const {token  } = validateRequest(
       user.verificationTokenExpiry.getTime() < Date.now();
 
     if (isExpired) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Verification link has expired",
-        },
-        { status: 400 }
+      throw new AppError(
+        ERROR_CODES.VERIFICATION_TOKEN_EXPIRED,
+        ERROR_MESSAGES.VERIFICATION_TOKEN_EXPIRED,
+        400
       );
     }
 
@@ -52,19 +56,17 @@ const {token  } = validateRequest(
     return NextResponse.json(
       {
         success: true,
-        message: "Email verified successfully",
+        message: SUCCESS_MESSAGES.EMAIL_VERIFIED,
+        code: SUCCESS_CODES.EMAIL_VERIFIED,
       },
       { status: 200 }
     );
-  } catch (error: any) {
-    console.log("Email verification error:", error.message);
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Something went wrong. Please try again later.",
-      },
-      { status: 500 }
+  } catch (error: unknown) {
+    console.log(
+      "Email verification error:",
+      error instanceof Error ? error.message : error
     );
+
+    return errorHandler(error);
   }
 }

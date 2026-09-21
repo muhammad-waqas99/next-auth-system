@@ -1,8 +1,4 @@
-
-import {
-  hashDisableChallenge,
-
-} from "@/app/lib/auth/token/token";
+import { hashDisableChallenge } from "@/app/lib/auth/token/token";
 import { consumeBackupCode } from "@/app/lib/auth/backup-code/consumeBackupCode";
 
 import DisableChallenge from "@/app/models/twoFactorDisableChallenge.model";
@@ -12,34 +8,33 @@ import { NextRequest, NextResponse } from "next/server";
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 import { verifyDisableSchema } from "@/app/lib/validationSchema/auth.schema";
-
-
+import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { AppError } from "@/app/lib/errors/AppError";
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  SUCCESS_CODES,
+  SUCCESS_MESSAGES,
+} from "@/app/lib/errors/messages";
 
 export async function POST(request: NextRequest) {
   try {
-const body = await request.json();
+    const body = await request.json();
 
-const {backupCode,challenge,otp  } = validateRequest(
-  verifyDisableSchema,
-  body
-);
-
-
+    const { backupCode, challenge, otp } = validateRequest(
+      verifyDisableSchema,
+      body
+    );
 
     if (otp && backupCode) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Use either OTP or backup code",
-        },
-        { status: 400 }
+      throw new AppError(
+        ERROR_CODES.VALIDATION_ERROR,
+        ERROR_MESSAGES.VALIDATION_ERROR,
+        400
       );
     }
 
-
-      const{userId} =await requireAuth(request)
-
-    
+    const { userId } = await requireAuth(request);
 
     const currentUserId = userId;
 
@@ -50,32 +45,26 @@ const {backupCode,challenge,otp  } = validateRequest(
     });
 
     if (!disableChallenge) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid disable challenge",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.INVALID_DISABLE_CHALLENGE,
+        ERROR_MESSAGES.INVALID_DISABLE_CHALLENGE,
+        401
       );
     }
 
     if (disableChallenge.usedAt) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Disable challenge has already been used",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.DISABLE_CHALLENGE_USED,
+        ERROR_MESSAGES.DISABLE_CHALLENGE_USED,
+        401
       );
     }
 
     if (disableChallenge.expiresAt < new Date()) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Disable challenge has expired",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.DISABLE_CHALLENGE_EXPIRED,
+        ERROR_MESSAGES.DISABLE_CHALLENGE_EXPIRED,
+        401
       );
     }
 
@@ -83,34 +72,28 @@ const {backupCode,challenge,otp  } = validateRequest(
       disableChallenge.userId.toString() !==
       currentUserId.toString()
     ) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid disable challenge",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.INVALID_DISABLE_CHALLENGE,
+        ERROR_MESSAGES.INVALID_DISABLE_CHALLENGE,
+        401
       );
     }
 
     const user = await User.findById(currentUserId);
 
     if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "User not found",
-        },
-        { status: 404 }
+      throw new AppError(
+        ERROR_CODES.USER_NOT_FOUND,
+        ERROR_MESSAGES.USER_NOT_FOUND,
+        404
       );
     }
 
     if (!user.twoFactorEnabled || !user.twoFactorSecret) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Two-factor authentication is not enabled",
-        },
-        { status: 400 }
+      throw new AppError(
+        ERROR_CODES.TWO_FACTOR_NOT_ENABLED,
+        ERROR_MESSAGES.TWO_FACTOR_NOT_ENABLED,
+        400
       );
     }
 
@@ -122,16 +105,13 @@ const {backupCode,challenge,otp  } = validateRequest(
       });
 
       if (!result.valid) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Invalid OTP",
-          },
-          { status: 401 }
+        throw new AppError(
+          ERROR_CODES.INVALID_OTP,
+          ERROR_MESSAGES.INVALID_OTP,
+          401
         );
       }
     }
-
 
     if (backupCode) {
       const backupCodeConsumed = await consumeBackupCode(
@@ -140,12 +120,10 @@ const {backupCode,challenge,otp  } = validateRequest(
       );
 
       if (!backupCodeConsumed) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Incorrect or already used backup code",
-          },
-          { status: 401 }
+        throw new AppError(
+          ERROR_CODES.INVALID_BACKUP_CODE,
+          ERROR_MESSAGES.INVALID_BACKUP_CODE,
+          401
         );
       }
     }
@@ -161,20 +139,17 @@ const {backupCode,challenge,otp  } = validateRequest(
     return NextResponse.json(
       {
         success: true,
-        message: "2FA disabled successfully",
+        message: SUCCESS_MESSAGES.TWO_FACTOR_DISABLED,
+        code: SUCCESS_CODES.TWO_FACTOR_DISABLED,
       },
       { status: 200 }
     );
-  } catch (error: any) {
-    console.log("Verify-Disable Error:", error.message);
-
-    return NextResponse.json(
-      {
-        success: false,
-        message:
-          "Something went wrong. Please try again later.",
-      },
-      { status: 500 }
+  } catch (error: unknown) {
+    console.log(
+      "Verify-Disable Error:",
+      error instanceof Error ? error.message : error
     );
+
+    return errorHandler(error);
   }
 }

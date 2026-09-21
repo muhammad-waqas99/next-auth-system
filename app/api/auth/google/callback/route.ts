@@ -1,20 +1,23 @@
 import User from "@/app/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
 
-
 import { completeLogin } from "@/app/lib/auth/login/completeLogin";
+import { AppError } from "@/app/lib/errors/AppError";
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+} from "@/app/lib/errors/messages";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
 
 export async function GET(request: NextRequest) {
   try {
     const code = request.nextUrl.searchParams.get("code");
 
     if (!code) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Authorization code missing",
-        },
-        { status: 400 }
+      throw new AppError(
+        ERROR_CODES.GOOGLE_AUTH_CODE_MISSING,
+        ERROR_MESSAGES.GOOGLE_AUTH_CODE_MISSING,
+        400
       );
     }
 
@@ -23,12 +26,10 @@ export async function GET(request: NextRequest) {
     const saveState = request.cookies.get("google-auth-state")?.value;
 
     if (googleState !== saveState) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid State",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.INVALID_GOOGLE_STATE,
+        ERROR_MESSAGES.INVALID_GOOGLE_STATE,
+        401
       );
     }
 
@@ -50,12 +51,10 @@ export async function GET(request: NextRequest) {
     );
 
     if (!tokenResponse.ok) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Failed to exchange authorization code",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.GOOGLE_TOKEN_EXCHANGE_FAILED,
+        ERROR_MESSAGES.GOOGLE_TOKEN_EXCHANGE_FAILED,
+        401
       );
     }
 
@@ -71,12 +70,10 @@ export async function GET(request: NextRequest) {
     );
 
     if (!userResponse.ok) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Failed to get Google user information",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.GOOGLE_USER_INFO_FAILED,
+        ERROR_MESSAGES.GOOGLE_USER_INFO_FAILED,
+        401
       );
     }
 
@@ -88,17 +85,12 @@ export async function GET(request: NextRequest) {
     const googleID = googleUser.sub;
 
     if (!email || !name || isVerified !== true || !googleID) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid Google user information",
-        },
-        { status: 400 }
+      throw new AppError(
+        ERROR_CODES.INVALID_GOOGLE_USER_INFO,
+        ERROR_MESSAGES.INVALID_GOOGLE_USER_INFO,
+        400
       );
     }
-
-
-
 
     let user = await User.findOne({
       googleId: googleID,
@@ -122,8 +114,6 @@ export async function GET(request: NextRequest) {
       });
     }
 
-
-
     user = await User.findOne({
       email,
     });
@@ -141,8 +131,6 @@ export async function GET(request: NextRequest) {
       });
     }
 
- 
-
     user = await User.create({
       email,
       name,
@@ -157,15 +145,9 @@ export async function GET(request: NextRequest) {
       request,
       message: "local-g-login",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("OAuth Handler Error:", error);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message: error.message || "Internal server error",
-      },
-      { status: 500 }
-    );
+    return errorHandler(error);
   }
 }

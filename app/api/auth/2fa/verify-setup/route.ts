@@ -1,4 +1,3 @@
-
 import requireAuth from "@/app/lib/auth/requireAuth";
 import { generateBackupCodes } from "@/app/lib/auth/token/token";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
@@ -6,22 +5,26 @@ import { verifySetupSchema } from "@/app/lib/validationSchema/auth.schema";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 import BackupCode from "@/app/models/backupCode.model";
 
-
 import { NextRequest, NextResponse } from "next/server";
 import { verify } from "otplib";
 
+import { AppError } from "@/app/lib/errors/AppError";
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  SUCCESS_CODES,
+  SUCCESS_MESSAGES,
+} from "@/app/lib/errors/messages";
+
 export async function POST(request: NextRequest) {
   try {
-      
-      const {user}= await requireAuth(request)
-  
+    const { user } = await requireAuth(request);
+
     if (user.twoFactorEnabled) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "2FA is already enabled",
-        },
-        { status: 400 }
+      throw new AppError(
+        ERROR_CODES.TWO_FACTOR_ALREADY_ENABLED,
+        ERROR_MESSAGES.TWO_FACTOR_ALREADY_ENABLED,
+        400
       );
     }
 
@@ -29,12 +32,10 @@ export async function POST(request: NextRequest) {
       !user.pendingTwoFactorSecret ||
       !user.pendingTwoFactorExpiresAt
     ) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "No active 2FA setup found",
-        },
-        { status: 400 }
+      throw new AppError(
+        ERROR_CODES.NO_ACTIVE_TWO_FACTOR_SETUP,
+        ERROR_MESSAGES.NO_ACTIVE_TWO_FACTOR_SETUP,
+        400
       );
     }
 
@@ -46,62 +47,54 @@ export async function POST(request: NextRequest) {
 
       await user.save();
 
-      return NextResponse.json(
-        {
-          success: false,
-          message: "2FA setup has expired. Please start again.",
-        },
-        { status: 400 }
+      throw new AppError(
+        ERROR_CODES.TWO_FACTOR_SETUP_EXPIRED,
+        ERROR_MESSAGES.TWO_FACTOR_SETUP_EXPIRED,
+        400
       );
     }
-const body = await request.json();
 
-const {otpSecret,otp  } = validateRequest(
-  verifySetupSchema,
-  body
-);
+    const body = await request.json();
+
+    const { otpSecret, otp } = validateRequest(
+      verifySetupSchema,
+      body
+    );
 
     if (user.pendingTwoFactorSecret !== otpSecret) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid 2FA setup",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.INVALID_TWO_FACTOR_SETUP,
+        ERROR_MESSAGES.INVALID_TWO_FACTOR_SETUP,
+        401
       );
     }
 
     const result = await verify({
-  secret: user.pendingTwoFactorSecret,
-  token: otp,
-   epochTolerance: 30,
-});
+      secret: user.pendingTwoFactorSecret,
+      token: otp,
+      epochTolerance: 30,
+    });
 
-
-
-if (!result.valid) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Incorrect or expired OTP",
-        },
-        { status: 401 }
+    if (!result.valid) {
+      throw new AppError(
+        ERROR_CODES.INVALID_OTP,
+        ERROR_MESSAGES.INVALID_OTP,
+        401
       );
     }
-const { codes, hashes } = generateBackupCodes();
 
-await BackupCode.create({
-  userId: user._id,
-  codes: hashes.map((codeHash) => ({
-    codeHash,
-    usedAt: null,
-  })),
-});
+    const { codes, hashes } = generateBackupCodes();
 
- 
+    await BackupCode.create({
+      userId: user._id,
+      codes: hashes.map((codeHash) => ({
+        codeHash,
+        usedAt: null,
+      })),
+    });
+
     user.twoFactorSecret = user.pendingTwoFactorSecret;
     user.twoFactorEnabled = true;
-
 
     user.pendingTwoFactorSecret = null;
     user.pendingTwoFactorExpiresAt = null;
@@ -111,14 +104,18 @@ await BackupCode.create({
     return NextResponse.json(
       {
         success: true,
-        message: "2FA enabled successfully",
-        backupCodes:codes
+        message: SUCCESS_MESSAGES.TWO_FACTOR_ENABLED,
+        code: SUCCESS_CODES.TWO_FACTOR_ENABLED,
+        backupCodes: codes,
       },
       { status: 200 }
     );
-  } catch (error: any) {
-    console.log("2FA verification error:", error.message);
+  } catch (error: unknown) {
+    console.log(
+      "2FA verification error:",
+      error instanceof Error ? error.message : error
+    );
 
-    return errorHandler(error)
+    return errorHandler(error);
   }
 }

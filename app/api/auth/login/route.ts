@@ -11,75 +11,65 @@ import { getDeviceInfo } from "@/app/lib/auth/device/getDeviceInfo";
 import { setAuthCookies } from "@/app/lib/auth/cookies/cookies";
 import { comparePassword } from "@/app/lib/auth/password/password";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
 
-interface ReqBody {
-  email: string;
-  password: string;
-}
+import { ERROR_CODES, ERROR_MESSAGES, SUCCESS_CODES, SUCCESS_MESSAGES } from "@/app/lib/errors/messages";
+import { AppError } from "@/app/lib/errors/AppError";
 
 export async function POST(request: NextRequest) {
   try {
-const body :ReqBody= await request.json();
+    const body= await request.json();
 
-const { email, password } = validateRequest(
-  loginSchema,
-  body
-);
-
-
-
+    const { email, password } = validateRequest(
+      loginSchema,
+      body
+    );
 
     await connectToDB();
 
     const user = await User.findOne({ email });
 
     if (user && user.authProvider === "google") {
-      return NextResponse.json({
-        success: false,
-        message: "Password login is not available for this account.",
-      });
+      throw new AppError(
+        ERROR_CODES.PASSWORD_LOGIN_UNAVAILABLE,
+        ERROR_MESSAGES.PASSWORD_LOGIN_UNAVAILABLE,
+        400
+      );
     }
 
     if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid email or password",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.INVALID_CREDENTIALS,
+        ERROR_MESSAGES.INVALID_CREDENTIALS,
+        401
       );
     }
 
     if (!user.password) {
-      return NextResponse.json({
-        success: false,
-        message: "Password login is not available for this account.",
-      });
+      throw new AppError(
+        ERROR_CODES.PASSWORD_LOGIN_UNAVAILABLE,
+        ERROR_MESSAGES.PASSWORD_LOGIN_UNAVAILABLE,
+        400
+      );
     }
 
     const checkPassword = await comparePassword(password, user.password);
 
     if (!checkPassword) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid email or password",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.INVALID_CREDENTIALS,
+        ERROR_MESSAGES.INVALID_CREDENTIALS,
+        401
       );
     }
 
     if (!user.isVerified) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "Please verify your email before logging in. Check your inbox for the verification link.",
-        },
-        { status: 403 }
+      throw new AppError(
+        ERROR_CODES.EMAIL_NOT_VERIFIED,
+        ERROR_MESSAGES.EMAIL_NOT_VERIFIED,
+        403
       );
     }
-
 
     if (user.twoFactorEnabled) {
       const loginChallenge = await createLoginChallenge(user.id);
@@ -89,13 +79,12 @@ const { email, password } = validateRequest(
           success: true,
           requiresTwoFactor: true,
           challenge: loginChallenge,
-          message: "Two-factor authentication required",
+          message: SUCCESS_MESSAGES.TWO_FACTOR_REQUIRED,
+          code: SUCCESS_CODES.TWO_FACTOR_REQUIRED,
         },
         { status: 200 }
       );
     }
-
-
 
     const { browser, os, device } = getDeviceInfo(request);
 
@@ -106,28 +95,24 @@ const { email, password } = validateRequest(
       device,
     });
 
-
-
     const response = NextResponse.json(
       {
         success: true,
-        message: "Logged in successfully",
+        message: SUCCESS_MESSAGES.LOGIN_SUCCESS,
+        code: SUCCESS_CODES.LOGIN_SUCCESS,
       },
       { status: 200 }
     );
 
-setAuthCookies(response, accessToken, refreshToken);
+    setAuthCookies(response, accessToken, refreshToken);
 
     return response;
-  } catch (error: any) {
-    console.log("Login error:", error.message);
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Something went wrong. Please try again later.",
-      },
-      { status: 500 }
+  } catch (error: unknown) {
+    console.log(
+      "Login error:",
+      error instanceof Error ? error.message : error
     );
+
+    return errorHandler(error);
   }
 }

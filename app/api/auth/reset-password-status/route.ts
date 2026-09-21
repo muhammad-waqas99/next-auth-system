@@ -4,15 +4,24 @@ import { resetPasswordStatusSchema } from "@/app/lib/validationSchema/auth.schem
 import { NextRequest, NextResponse } from "next/server";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  SUCCESS_MESSAGES,
+} from "@/app/lib/errors/messages";
+import { AppError } from "@/app/lib/errors/AppError";
 
 export async function GET(request: NextRequest) {
   try {
     const resetRequestId =
       request.nextUrl.searchParams.get("resetRequestId");
-const { resetRequestId: validResetRequestId } = validateRequest(
-  resetPasswordStatusSchema,
-  { resetRequestId }
-);
+
+    const { resetRequestId: validResetRequestId } =
+      validateRequest(
+        resetPasswordStatusSchema,
+        { resetRequestId }
+      );
+
     await connectToDB();
 
     const user = await User.findOne({
@@ -20,12 +29,10 @@ const { resetRequestId: validResetRequestId } = validateRequest(
     });
 
     if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid reset request",
-        },
-        { status: 404 }
+      throw new AppError(
+        ERROR_CODES.INVALID_RESET_REQUEST,
+        ERROR_MESSAGES.INVALID_RESET_REQUEST,
+        404
       );
     }
 
@@ -36,14 +43,17 @@ const { resetRequestId: validResetRequestId } = validateRequest(
         success: true,
         isReset,
         message: isReset
-          ? "Password has been reset successfully"
-          : "Password reset is still pending",
+          ? SUCCESS_MESSAGES.PASSWORD_RESET
+          : SUCCESS_MESSAGES.PASSWORD_RESET_PENDING,
       },
       { status: 200 }
     );
-  } catch (error: any) {
-    console.log("Reset status error:", error.message);
+  } catch (error: unknown) {
+    console.log(
+      "Reset status error:",
+      error instanceof Error ? error.message : error
+    );
 
-return errorHandler(error)
+    return errorHandler(error);
   }
 }

@@ -6,19 +6,21 @@ import connectToDB from "@/app/dbconfig/db";
 import { resetPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 import { hashPassword } from "@/app/lib/auth/password/password";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  SUCCESS_CODES,
+  SUCCESS_MESSAGES,
+} from "@/app/lib/errors/messages";
+import { AppError } from "@/app/lib/errors/AppError";
 
 export async function POST(request: NextRequest) {
   try {
-const body = await request.json();
+    const body = await request.json();
 
-const { plainToken, confirmPassword, password } = validateRequest(
-  resetPasswordSchema,
-  body
-);
-
-
-
-
+    const { plainToken,  password } =
+      validateRequest(resetPasswordSchema, body);
 
     const hashToken = crypto
       .createHash("sha256")
@@ -32,49 +34,27 @@ const { plainToken, confirmPassword, password } = validateRequest(
     });
 
     if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid reset password token",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.INVALID_RESET_TOKEN,
+        ERROR_MESSAGES.INVALID_RESET_TOKEN,
+        401
       );
     }
 
-    
     if (
       !user.resetPasswordTokenExpiry ||
-      user.resetPasswordTokenExpiry.getTime() <
-        Date.now()
+      user.resetPasswordTokenExpiry.getTime() < Date.now()
     ) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Reset password link has expired",
-        },
-        { status: 400 }
+      throw new AppError(
+        ERROR_CODES.RESET_TOKEN_EXPIRED,
+        ERROR_MESSAGES.RESET_TOKEN_EXPIRED,
+        400
       );
     }
 
-    if (password !== confirmPassword) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "Password and confirm password do not match",
-        },
-        { status: 400 }
-      );
-    }
-
-    
-
-    const hashedPassword = await hashPassword(
-      password
-    );
+    const hashedPassword = await hashPassword(password);
 
     user.password = hashedPassword;
-
 
     user.resetPasswordToken = undefined;
     user.resetPasswordTokenExpiry = undefined;
@@ -85,20 +65,17 @@ const { plainToken, confirmPassword, password } = validateRequest(
     return NextResponse.json(
       {
         success: true,
-        message: "Password reset successfully",
+        message: SUCCESS_MESSAGES.PASSWORD_RESET,
+        code: SUCCESS_CODES.PASSWORD_RESET,
       },
       { status: 200 }
     );
-
-  } catch (error:any) {
-
-     console.log("Reset password error:", error.message);
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Something went wrong. Please try again later.",
-      },
-      { status: 500 }
+  } catch (error: unknown) {
+    console.log(
+      "Reset password error:",
+      error instanceof Error ? error.message : error
     );
+
+    return errorHandler(error);
   }
 }

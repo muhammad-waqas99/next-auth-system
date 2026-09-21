@@ -5,6 +5,9 @@ import { NextRequest, NextResponse } from "next/server";
 import sendMail from "@/app/lib/mail";
 import { forgotPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { ERROR_CODES, ERROR_MESSAGES, SUCCESS_CODES, SUCCESS_MESSAGES } from "@/app/lib/errors/messages";
+import { AppError } from "@/app/lib/errors/AppError";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,23 +24,22 @@ const { email } = validateRequest(
 
     const user = await User.findOne({ email });
 
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "If an account exists with this email, a reset link has been sent.",
-        },
-        { status: 404 }
-      );
-    }
-    if (user.authProvider === "google") {
+if (!user) {
   return NextResponse.json(
     {
-      success: false,
-      message:
-        "This account uses Google Sign-In. Please continue with Google.",
+      success: true,
+      message: SUCCESS_MESSAGES.PASSWORD_RESET_EMAIL_SENT,
+      code: SUCCESS_CODES.PASSWORD_RESET_EMAIL_SENT,
     },
-    { status: 400 }
+    { status: 200 }
+  );
+}
+if (user.authProvider === "google") {
+  throw new AppError(
+
+    ERROR_CODES.GOOGLE_AUTH_REQUIRED,
+    ERROR_MESSAGES.GOOGLE_AUTH_REQUIRED,
+    400
   );
 }
 
@@ -67,7 +69,8 @@ await user.save();
     return NextResponse.json(
       {
         success: true,
-        message: "Reset password email sent successfully",
+        code:SUCCESS_CODES.PASSWORD_RESET_EMAIL_SENT,
+        message:SUCCESS_MESSAGES.PASSWORD_RESET_EMAIL_SENT,
         resetRequestId
       },
       { status: 200 }
@@ -76,12 +79,6 @@ await user.save();
   }  catch (error:any) {
 
      console.log("Forget password error:", error.message);
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Something went wrong. Please try again later.",
-      },
-      { status: 500 }
-    );
+  return errorHandler(error)
   }
 }

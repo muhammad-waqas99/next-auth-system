@@ -1,8 +1,6 @@
-
 import requireAuth from "@/app/lib/auth/requireAuth";
 import {
   generateBackupCodes,
-
   hashRegenerateChallenge,
 } from "@/app/lib/auth/token/token";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
@@ -10,21 +8,26 @@ import { verifyOtpSchema } from "@/app/lib/validationSchema/auth.schema";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 import BackupCode from "@/app/models/backupCode.model";
 import RegenerateChallenge from "@/app/models/backupCodeRegenerateChallenge.model";
-;
 import { NextRequest, NextResponse } from "next/server";
 import { verify } from "otplib";
+import { AppError } from "@/app/lib/errors/AppError";
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  SUCCESS_CODES,
+  SUCCESS_MESSAGES,
+} from "@/app/lib/errors/messages";
 
 export async function POST(request: NextRequest) {
   try {
-    
+    const { user, userId } = await requireAuth(request);
 
-    const {user, userId} = await requireAuth(request)
-const body = await request.json();
+    const body = await request.json();
 
-const {challenge,otp  } = validateRequest(
-  verifyOtpSchema,
-  body
-);
+    const { challenge, otp } = validateRequest(
+      verifyOtpSchema,
+      body
+    );
 
     const challengeHash = hashRegenerateChallenge(challenge);
 
@@ -33,58 +36,45 @@ const {challenge,otp  } = validateRequest(
     });
 
     if (!regenerateChallenge) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid regeneration challenge",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.INVALID_REGENERATE_CHALLENGE,
+        ERROR_MESSAGES.INVALID_REGENERATE_CHALLENGE,
+        401
       );
     }
 
     if (regenerateChallenge.usedAt) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Regeneration challenge has already been used",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.REGENERATE_CHALLENGE_USED,
+        ERROR_MESSAGES.REGENERATE_CHALLENGE_USED,
+        401
       );
     }
 
     if (regenerateChallenge.expiresAt < new Date()) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Regeneration challenge has expired",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.REGENERATE_CHALLENGE_EXPIRED,
+        ERROR_MESSAGES.REGENERATE_CHALLENGE_EXPIRED,
+        401
       );
     }
 
-    if (
-      regenerateChallenge.userId.toString() !== userId
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid regeneration challenge",
-        },
-        { status: 401 }
+    if (regenerateChallenge.userId.toString() !== userId) {
+      throw new AppError(
+        ERROR_CODES.INVALID_REGENERATE_CHALLENGE,
+        ERROR_MESSAGES.INVALID_REGENERATE_CHALLENGE,
+        401
       );
     }
 
     if (!user.twoFactorEnabled || !user.twoFactorSecret) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Two-factor authentication is not enabled",
-        },
-        { status: 400 }
+      throw new AppError(
+        ERROR_CODES.TWO_FACTOR_NOT_ENABLED,
+        ERROR_MESSAGES.TWO_FACTOR_NOT_ENABLED,
+        400
       );
     }
 
-   
     const result = await verify({
       secret: user.twoFactorSecret,
       token: otp,
@@ -92,12 +82,10 @@ const {challenge,otp  } = validateRequest(
     });
 
     if (!result.valid) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid OTP",
-        },
-        { status: 401 }
+      throw new AppError(
+        ERROR_CODES.INVALID_OTP,
+        ERROR_MESSAGES.INVALID_OTP,
+        401
       );
     }
 
@@ -106,16 +94,13 @@ const {challenge,otp  } = validateRequest(
     });
 
     if (!backupCode) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Backup codes not found",
-        },
-        { status: 404 }
+      throw new AppError(
+        ERROR_CODES.BACKUP_CODES_NOT_FOUND,
+        ERROR_MESSAGES.BACKUP_CODES_NOT_FOUND,
+        404
       );
     }
 
-   
     if (backupCode.lastRegeneratedAt) {
       const cooldown = 30 * 24 * 60 * 60 * 1000;
 
@@ -123,19 +108,15 @@ const {challenge,otp  } = validateRequest(
         backupCode.lastRegeneratedAt.getTime() + cooldown;
 
       if (Date.now() < nextAllowedAt) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Backup codes can only be regenerated once every 30 days",
-          },
-          { status: 429 }
+        throw new AppError(
+          ERROR_CODES.BACKUP_CODE_REGENERATION_COOLDOWN,
+          ERROR_MESSAGES.BACKUP_CODE_REGENERATION_COOLDOWN,
+          429
         );
       }
     }
 
- 
     const { codes, hashes } = generateBackupCodes();
-
 
     backupCode.codes = hashes.map((codeHash) => ({
       codeHash,
@@ -150,21 +131,21 @@ const {challenge,otp  } = validateRequest(
 
     await regenerateChallenge.save();
 
-
     return NextResponse.json(
       {
         success: true,
-        message: "Backup codes regenerated successfully",
+        message: SUCCESS_MESSAGES.BACKUP_CODES_REGENERATED,
+        code: SUCCESS_CODES.BACKUP_CODES_REGENERATED,
         backupCodes: codes,
       },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.log(
       "Verify Regenerate Backup Codes Error:",
-      error.message
+      error instanceof Error ? error.message : error
     );
 
-    return errorHandler(error)
+    return errorHandler(error);
   }
 }
