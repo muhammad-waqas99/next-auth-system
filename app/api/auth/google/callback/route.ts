@@ -1,12 +1,12 @@
-import User from "@/app/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
 
+import User from "@/app/models/user.model";
+
+import  connectToDB  from "@/app/dbconfig/db";
 import { completeLogin } from "@/app/lib/auth/login/completeLogin";
+
 import { AppError } from "@/app/lib/errors/AppError";
-import {
-  ERROR_CODES,
-  ERROR_MESSAGES,
-} from "@/app/lib/errors/messages";
+import { ERROR_CODES, ERROR_MESSAGES } from "@/app/lib/errors/messages";
 import { errorHandler } from "@/app/lib/errors/errorHandler";
 
 export async function GET(request: NextRequest) {
@@ -21,11 +21,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const googleState = request.nextUrl.searchParams.get("state");
+    const state = request.nextUrl.searchParams.get("state");
+    const storedState = request.cookies.get("google-auth-state")?.value;
 
-    const saveState = request.cookies.get("google-auth-state")?.value;
-
-    if (googleState !== saveState) {
+    if (!state || !storedState || state !== storedState) {
       throw new AppError(
         ERROR_CODES.INVALID_GOOGLE_STATE,
         ERROR_MESSAGES.INVALID_GOOGLE_STATE,
@@ -60,8 +59,8 @@ export async function GET(request: NextRequest) {
 
     const tokenData = await tokenResponse.json();
 
-    const userResponse = await fetch(
-      "https://openidconnect.googleapis.com/v1/userinfo",
+    const userInfoResponse = await fetch(
+      "https://www.googleapis.com/oauth2/v3/userinfo",
       {
         headers: {
           Authorization: `Bearer ${tokenData.access_token}`,
@@ -69,7 +68,7 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    if (!userResponse.ok) {
+    if (!userInfoResponse.ok) {
       throw new AppError(
         ERROR_CODES.GOOGLE_USER_INFO_FAILED,
         ERROR_MESSAGES.GOOGLE_USER_INFO_FAILED,
@@ -77,14 +76,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const googleUser = await userResponse.json();
+    const googleUser = await userInfoResponse.json();
 
-    const email = googleUser.email;
-    const name = googleUser.name;
-    const isVerified = googleUser.email_verified;
-    const googleID = googleUser.sub;
+    const {
+      sub: googleId,
+      email,
+      name,
+      email_verified: emailVerified,
+    } = googleUser;
 
-    if (!email || !name || isVerified !== true || !googleID) {
+    if (!googleId || !email || !name || !emailVerified) {
       throw new AppError(
         ERROR_CODES.INVALID_GOOGLE_USER_INFO,
         ERROR_MESSAGES.INVALID_GOOGLE_USER_INFO,
@@ -92,62 +93,68 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let user = await User.findOne({
-      googleId: googleID,
-    });
+    await connectToDB();
+
+    let user = await User.findOne({ googleId });
 
     if (user) {
       user.isVerified = true;
 
-      if (user.password !== null) {
-        user.authProvider = "both";
-      } else {
-        user.authProvider = "google";
-      }
+      user.authProvider = user.password
+        ? "both"
+        : "google";
 
       await user.save();
 
-      return completeLogin({
+      const response = await completeLogin({
         user,
         request,
-        message: "google-login",
+        flow: "google-login",
       });
+
+      response.cookies.delete("google-auth-state");
+
+      return response;
     }
 
-    user = await User.findOne({
-      email,
-    });
+    user = await User.findOne({ email });
 
     if (user) {
+      user.googleId = googleId;
+      user.isVerified = true;
       user.authProvider = "both";
-      user.googleId = googleID;
 
       await user.save();
 
-      return completeLogin({
+      const response = await completeLogin({
         user,
         request,
-        message: "google-linked",
+        flow: "google-linked",
       });
+
+      response.cookies.delete("google-auth-state");
+
+      return response;
     }
 
     user = await User.create({
-      email,
       name,
-      googleId: googleID,
-      authProvider: "google",
-      password: null,
+      email,
+      googleId,
       isVerified: true,
+      authProvider: "google",
     });
 
-    return completeLogin({
+    const response = await completeLogin({
       user,
       request,
-      message: "local-g-login",
+      flow: "local-g-login",
     });
-  } catch (error: unknown) {
-    console.error("OAuth Handler Error:", error);
 
+    response.cookies.delete("google-auth-state");
+
+    return response;
+  } catch (error) {
     return errorHandler(error);
   }
 }

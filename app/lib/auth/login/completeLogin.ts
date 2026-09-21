@@ -9,13 +9,13 @@ import { setAuthCookies } from "../cookies/cookies";
 interface CompleteLoginParams {
   user: typeof User.prototype;
   request: NextRequest;
-  message: string;
+  flow: string;
 }
 
 export async function completeLogin({
   user,
   request,
-  message,
+  flow,
 }: CompleteLoginParams) {
   const { browser, os, device } = getDeviceInfo(request);
 
@@ -24,7 +24,7 @@ export async function completeLogin({
 
     return NextResponse.redirect(
       new URL(
-        `/two-factor/login?challenge=${challenge}&message=${message}`,
+        `/two-factor/login?challenge=${challenge}&message=${flow}`,
         request.url
       )
     );
@@ -38,10 +38,10 @@ export async function completeLogin({
   });
 
   const response = NextResponse.redirect(
-    new URL(`/profile?message=${message}`, request.url)
+    new URL(`/profile?message=${flow}`, request.url)
   );
 
-setAuthCookies(response, accessToken, refreshToken);
+  setAuthCookies(response, accessToken, refreshToken);
 
   return response;
 }

@@ -1,28 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDB from "@/app/dbconfig/db";
+import { verify } from "otplib";
+
 import User from "@/app/models/user.model";
 import LoginChallenge from "@/app/models/loginChallenge.model";
-import RefreshToken from "@/app/models/refreshToken.model";
-import {
-  createAccessToken,
-  generateRefreshToken,
-  generateSessionId,
-  hashRefreshToken,
-  hashLoginChallenge,
-} from "@/app/lib/auth/token/token";
-import { UAParser } from "ua-parser-js";
-import { verify } from "otplib";
+
+import  connectToDB  from "@/app/dbconfig/db";
+import { hashLoginChallenge } from "@/app/lib/auth/token/token";
+import { getDeviceInfo } from "@/app/lib/auth/device/getDeviceInfo";
+import { createLoginSession } from "@/app/lib/auth/login/createLoginSession";
+import { setAuthCookies } from "@/app/lib/auth/cookies/cookies";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 import { verifyOtpSchema } from "@/app/lib/validationSchema/auth.schema";
-import { setAuthCookies } from "@/app/lib/auth/cookies/cookies";
-import { errorHandler } from "@/app/lib/errors/errorHandler";
+
 import { AppError } from "@/app/lib/errors/AppError";
-import {
-  ERROR_CODES,
-  ERROR_MESSAGES,
-  SUCCESS_CODES,
-  SUCCESS_MESSAGES,
-} from "@/app/lib/errors/messages";
+import { ERROR_CODES, ERROR_MESSAGES, SUCCESS_CODES, SUCCESS_MESSAGES } from "@/app/lib/errors/messages";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,13 +75,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await verify({
-      secret: user.twoFactorSecret,
+    const isValidOtp = await verify({
       token: otp,
-      epochTolerance: 30,
+      secret: user.twoFactorSecret,
     });
 
-    if (!result.valid) {
+    if (!isValidOtp) {
       throw new AppError(
         ERROR_CODES.INVALID_OTP,
         ERROR_MESSAGES.INVALID_OTP,
@@ -97,50 +88,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    loginChallenge.usedAt = new Date();
-    await loginChallenge.save();
+    const challengeResult = await LoginChallenge.updateOne(
+      {
+        _id: loginChallenge._id,
+        usedAt: null,
+      },
+      {
+        $set: {
+          usedAt: new Date(),
+        },
+      }
+    );
 
-    const accessPayload = {
-      id: user.id,
-      type: "access",
-    };
+    if (challengeResult.modifiedCount === 0) {
+      throw new AppError(
+        ERROR_CODES.LOGIN_CHALLENGE_USED,
+        ERROR_MESSAGES.LOGIN_CHALLENGE_USED,
+        401
+      );
+    }
 
-    const accessToken = createAccessToken(accessPayload);
+    const { browser, os, device } = getDeviceInfo(request);
 
-    const refreshToken = generateRefreshToken();
-
-    const hashedRefreshToken = hashRefreshToken(refreshToken);
-
-    const currentDate = Date.now();
-
-    const expiryDate = new Date(currentDate + 6.048e8);
-
-    const sessionExpiresAt = new Date(currentDate + 2.592e9);
-
-    const sessionId = generateSessionId();
-
-    const userAgent = request.headers.get("user-agent") ?? "";
-
-    const parser = new UAParser(userAgent);
-
-    const browser = parser.getBrowser().name || "Unknown";
-    const os = parser.getOS().name || "Unknown";
-
-    const deviceInfo = parser.getDevice();
-    const device = deviceInfo.type || "Desktop";
-
-    const newRefreshToken = new RefreshToken({
+    const { accessToken, refreshToken } = await createLoginSession({
       userId: user.id,
-      expiresAt: expiryDate,
-      sessionExpiresAt,
-      tokenHash: hashedRefreshToken,
-      sessionId,
-      os,
       browser,
+      os,
       device,
     });
-
-    await newRefreshToken.save();
 
     const response = NextResponse.json(
       {
@@ -154,12 +129,7 @@ export async function POST(request: NextRequest) {
     setAuthCookies(response, accessToken, refreshToken);
 
     return response;
-  } catch (error: unknown) {
-    console.log(
-      "Verify login 2FA error:",
-      error instanceof Error ? error.message : error
-    );
-
+  } catch (error) {
     return errorHandler(error);
   }
 }

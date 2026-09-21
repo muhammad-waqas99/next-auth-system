@@ -2,28 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 
 import User from "@/app/models/user.model";
 
-import connectToDB from "@/app/dbconfig/db";
-import { loginSchema } from "@/app/lib/validationSchema/auth.schema";
-
+import connectToDB  from "@/app/dbconfig/db";
+import { comparePassword } from "@/app/lib/auth/password/password";
 import { createLoginChallenge } from "@/app/lib/auth/login/createLoginChallenge";
 import { createLoginSession } from "@/app/lib/auth/login/createLoginSession";
 import { getDeviceInfo } from "@/app/lib/auth/device/getDeviceInfo";
 import { setAuthCookies } from "@/app/lib/auth/cookies/cookies";
-import { comparePassword } from "@/app/lib/auth/password/password";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
-import { errorHandler } from "@/app/lib/errors/errorHandler";
+import { loginSchema } from "@/app/lib/validationSchema/auth.schema";
 
-import { ERROR_CODES, ERROR_MESSAGES, SUCCESS_CODES, SUCCESS_MESSAGES } from "@/app/lib/errors/messages";
 import { AppError } from "@/app/lib/errors/AppError";
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  SUCCESS_CODES,
+  SUCCESS_MESSAGES,
+} from "@/app/lib/errors/messages";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
 
 export async function POST(request: NextRequest) {
   try {
-    const body= await request.json();
+    const body = await request.json();
 
-    const { email, password } = validateRequest(
-      loginSchema,
-      body
-    );
+    const { email, password } = validateRequest(loginSchema, body);
 
     await connectToDB();
 
@@ -53,7 +54,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const checkPassword = await comparePassword(password, user.password);
+    const checkPassword = await comparePassword(
+      password,
+      user.password
+    );
 
     if (!checkPassword) {
       throw new AppError(
@@ -72,13 +76,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (user.twoFactorEnabled) {
-      const loginChallenge = await createLoginChallenge(user.id);
+      const challenge = await createLoginChallenge(user.id);
 
       return NextResponse.json(
         {
           success: true,
           requiresTwoFactor: true,
-          challenge: loginChallenge,
+          challenge,
           message: SUCCESS_MESSAGES.TWO_FACTOR_REQUIRED,
           code: SUCCESS_CODES.TWO_FACTOR_REQUIRED,
         },
@@ -107,12 +111,7 @@ export async function POST(request: NextRequest) {
     setAuthCookies(response, accessToken, refreshToken);
 
     return response;
-  } catch (error: unknown) {
-    console.log(
-      "Login error:",
-      error instanceof Error ? error.message : error
-    );
-
+  } catch (error) {
     return errorHandler(error);
   }
 }

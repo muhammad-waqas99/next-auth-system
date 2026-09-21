@@ -1,22 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import LoginChallenge from "@/app/models/loginChallenge.model";
+
+import  connectToDB  from "@/app/dbconfig/db";
 import { hashLoginChallenge } from "@/app/lib/auth/token/token";
-import { consumeBackupCode } from "@/app/lib/auth/backup-code/consumeBackupCode";
+import  {consumeBackupCode}  from "@/app/lib/auth/backup-code/consumeBackupCode";
 import { getDeviceInfo } from "@/app/lib/auth/device/getDeviceInfo";
 import { createLoginSession } from "@/app/lib/auth/login/createLoginSession";
-
-import LoginChallenge from "@/app/models/loginChallenge.model";
+import { setAuthCookies } from "@/app/lib/auth/cookies/cookies";
 import { validateRequest } from "@/app/lib/validationSchema/validateRequest";
 import { backupLoginSchema } from "@/app/lib/validationSchema/auth.schema";
-import { setAuthCookies } from "@/app/lib/auth/cookies/cookies";
-import { errorHandler } from "@/app/lib/errors/errorHandler";
+
 import { AppError } from "@/app/lib/errors/AppError";
-import {
-  ERROR_CODES,
-  ERROR_MESSAGES,
-  SUCCESS_CODES,
-  SUCCESS_MESSAGES,
-} from "@/app/lib/errors/messages";
+import { ERROR_CODES, ERROR_MESSAGES, SUCCESS_CODES, SUCCESS_MESSAGES } from "@/app/lib/errors/messages";
+import { errorHandler } from "@/app/lib/errors/errorHandler";
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,6 +23,8 @@ export async function POST(request: NextRequest) {
       backupLoginSchema,
       body
     );
+
+    await connectToDB();
 
     const challengeHash = hashLoginChallenge(challenge);
 
@@ -59,18 +58,7 @@ export async function POST(request: NextRequest) {
 
     const userId = loginChallenge.userId.toString();
 
-    const backupCodeConsumed = await consumeBackupCode(
-      userId,
-      backupCode
-    );
-
-    if (!backupCodeConsumed) {
-      throw new AppError(
-        ERROR_CODES.INVALID_BACKUP_CODE,
-        ERROR_MESSAGES.INVALID_BACKUP_CODE,
-        401
-      );
-    }
+    await consumeBackupCode(userId, backupCode);
 
     const challengeResult = await LoginChallenge.updateOne(
       {
@@ -94,13 +82,12 @@ export async function POST(request: NextRequest) {
 
     const { browser, os, device } = getDeviceInfo(request);
 
-    const { accessToken, refreshToken } =
-      await createLoginSession({
-        userId,
-        browser,
-        os,
-        device,
-      });
+    const { accessToken, refreshToken } = await createLoginSession({
+      userId,
+      browser,
+      os,
+      device,
+    });
 
     const response = NextResponse.json(
       {
@@ -114,12 +101,7 @@ export async function POST(request: NextRequest) {
     setAuthCookies(response, accessToken, refreshToken);
 
     return response;
-  } catch (error: unknown) {
-    console.log(
-      "Backup Code Login error:",
-      error instanceof Error ? error.message : error
-    );
-
+  } catch (error) {
     return errorHandler(error);
   }
 }
