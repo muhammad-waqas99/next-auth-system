@@ -4,73 +4,50 @@ import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { axiosInstance } from "../../lib/axios/axiosInstance";
 
+import { axiosInstance } from "@/app/lib/axios/axiosInstance";
+import { useAuthStore } from "@/app/store/auth/authStore";
 
+import ProfileSkeleton from "./components/ProfileSkeleton";
 
 export default function Profile() {
+  const router = useRouter();
 
+  const user = useAuthStore((state) => state.user);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const backupCodesRemaining = useAuthStore(
+    (state) => state.backupCodesRemaining
+  );
+  const clearUser = useAuthStore((state) => state.clearUser);
 
   const getTimeAgo = (date: string) => {
-  const diff = Date.now() - new Date(date).getTime();
+    const diff = Date.now() - new Date(date).getTime();
 
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
 
-  if (seconds < 60) return "just now";
-  if (minutes < 60) return `${minutes} min ago`;
-  if (hours < 24) return `${hours} hr ago`;
-  if (days < 30) return `${days} days ago`;
+    if (seconds < 60) return "just now";
+    if (minutes < 60) return `${minutes} min ago`;
+    if (hours < 24) return `${hours} hr ago`;
+    if (days < 30) return `${days} days ago`;
 
-  return new Date(date).toLocaleDateString();
-};
-
-
-  const [user, setUser] = useState({
-    name: "",
-    email: "",
-    isVerified: false,
-    authProvider: "",
-    twoFactorStatus: false,
-    backupCodesRemaining:0,
-
-  });
+    return new Date(date).toLocaleDateString();
+  };
 
   const [sessions, setSessions] = useState<any[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState("");
 
-  const router = useRouter();
-
   useEffect(() => {
-    const getUserDetails = async () => {
+    const getSessions = async () => {
       try {
-        const response = await axiosInstance.get("/api/auth/me");
-
-        const name = response.data.user.name.toString();
-        const email = response.data.user.email.toString();
-        const isVerified = response.data.user.isVerified;
-        const authProvider = response.data.user.authProvider.toString();
-        const twoFactorStatus = response.data.user.twoFactorEnabled
-        const backupCodesRemaining = response.data.backupCodesRemaining
-
-        setUser({
-          name,
-          email,
-          isVerified,
-          authProvider,
-          twoFactorStatus,
-          backupCodesRemaining
-
-        });
-
-        const sessionResponse = await axiosInstance.get(
+        const response = await axiosInstance.get(
           "/api/auth/sessions"
         );
 
-        setSessions(sessionResponse.data.sessions);
-        setCurrentSessionId(sessionResponse.data.currentSessionId);
+        setSessions(response.data.sessions);
+        setCurrentSessionId(response.data.currentSessionId);
       } catch (error: any) {
         console.log("PROFILE CATCH:", error.response?.status);
         console.log("PROFILE ERROR:", error.message);
@@ -81,13 +58,14 @@ export default function Profile() {
       }
     };
 
-    getUserDetails();
-  }, []);
+    getSessions();
+  }, [router]);
 
   const onLogout = async () => {
     try {
       await axios.post("/api/auth/logout");
 
+      clearUser();
       router.push("/login");
     } catch (error: any) {
       console.log("Logout failed:", error.message);
@@ -98,35 +76,48 @@ export default function Profile() {
     try {
       await axios.post("/api/auth/logout-all");
 
+      clearUser();
       router.push("/login");
     } catch (error: any) {
       console.log("Logout failed:", error.message);
     }
   };
 
-const onLogoutSession = async (sessionId: string) => {
-  try {
-    if (sessionId === currentSessionId) {
-      await axios.post("/api/auth/logout");
+  const onLogoutSession = async (sessionId: string) => {
+    try {
+      if (sessionId === currentSessionId) {
+        await axios.post("/api/auth/logout");
 
-      router.push("/login");
-      return;
+        clearUser();
+        router.push("/login");
+        return;
+      }
+
+      await axios.post("/api/auth/logout-session", {
+        sessionId,
+      });
+
+      setSessions((prevSessions) =>
+        prevSessions.filter(
+          (session) => session.sessionId !== sessionId
+        )
+      );
+    } catch (error: any) {
+      console.log("Logout failed:", error.message);
     }
+  };
 
-    await axios.post("/api/auth/logout-session", {
-      sessionId,
-    });
-
-    setSessions((prevSessions) =>
-      prevSessions.filter(
-        (session) => session.sessionId !== sessionId
-      )
+  if (isLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center px-6 py-12">
+        <ProfileSkeleton />
+      </main>
     );
-  } catch (error: any) {
-    console.log("Logout failed:", error.message);
   }
-};
 
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[#111111] text-white">
@@ -146,16 +137,17 @@ const onLogoutSession = async (sessionId: string) => {
           )}
         </div>
 
-        {user.authProvider === "google" ? (
+        {user.authMethods.includes("google") &&
+        !user.authMethods.includes("email") ? (
           <Link
-            href={"/set-password"}
+            href="/set-password"
             className="my-2 rounded-lg bg-green-500 px-5 py-2 font-semibold transition hover:bg-green-600"
           >
             Set Password
           </Link>
         ) : (
           <Link
-            href={"/change-password"}
+            href="/change-password"
             className="my-2 rounded-lg bg-green-500 px-5 py-2 font-semibold transition hover:bg-green-600"
           >
             Change Password
@@ -195,9 +187,9 @@ const onLogoutSession = async (sessionId: string) => {
               <span className="font-semibold">Email:</span>{" "}
               {user.email}
             </p>
+
             <p className="text-gray-300 uppercase font-bold">
-         
-              {user.authProvider}
+              {user.authMethods.join(" + ")}
             </p>
 
             <p
@@ -225,107 +217,106 @@ const onLogoutSession = async (sessionId: string) => {
 
           <div className="space-y-3">
             {sessions.map((session) => (
-<div
-  key={session.sessionId}
-  className="rounded-xl border border-gray-700 bg-[#1a1a1a] p-5"
->
-  <div className="flex items-start justify-between gap-4">
-    <div>
-      <div className="flex items-center gap-2">
-        <p className="text-lg font-semibold">
-          {session.browser} on {session.os}
-        </p>
+              <div
+                key={session.sessionId}
+                className="rounded-xl border border-gray-700 bg-[#1a1a1a] p-5"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-lg font-semibold">
+                        {session.browser} on {session.os}
+                      </p>
 
-        {session.sessionId === currentSessionId && (
-          <span className="rounded-full bg-green-500 px-2.5 py-1 text-xs font-semibold text-black">
-            Current
-          </span>
-        )}
-      </div>
+                      {session.sessionId === currentSessionId && (
+                        <span className="rounded-full bg-green-500 px-2.5 py-1 text-xs font-semibold text-black">
+                          Current
+                        </span>
+                      )}
+                    </div>
 
-      <p className="mt-1 text-sm text-gray-400">
-        {session.device}
-      </p>
-    </div>
+                    <p className="mt-1 text-sm text-gray-400">
+                      {session.device}
+                    </p>
+                  </div>
 
-    <button
-      onClick={() => onLogoutSession(session.sessionId)}
-      type="button"
-      className="shrink-0 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold transition hover:bg-red-600"
-    >
-      Logout
-    </button>
-  </div>
+                  <button
+                    onClick={() =>
+                      onLogoutSession(session.sessionId)
+                    }
+                    type="button"
+                    className="shrink-0 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold transition hover:bg-red-600"
+                  >
+                    Logout
+                  </button>
+                </div>
 
-  <div className="mt-4 space-y-1 border-t border-gray-700 pt-3">
-    <p className="text-sm text-gray-400">
-      Created:{" "}
-      <span className="text-gray-300">
-        {new Date(session.createdAt).toLocaleString()}
-      </span>
-    </p>
+                <div className="mt-4 space-y-1 border-t border-gray-700 pt-3">
+                  <p className="text-sm text-gray-400">
+                    Created:{" "}
+                    <span className="text-gray-300">
+                      {new Date(
+                        session.createdAt
+                      ).toLocaleString()}
+                    </span>
+                  </p>
 
-    {session.lastUsedAt && (
-      <p className="text-sm text-gray-400">
-        Last used:{" "}
-        <span className="text-gray-300">
-          {getTimeAgo(session.lastUsedAt)}
-        </span>
-      </p>
-    )}
-  </div>
-</div>
+                  {session.lastUsedAt && (
+                    <p className="text-sm text-gray-400">
+                      Last used:{" "}
+                      <span className="text-gray-300">
+                        {getTimeAgo(session.lastUsedAt)}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
         </div>
 
-
-{!user.twoFactorStatus ?(
-  <button
-    onClick={() => router.push("/two-factor/setup")}
-    type="button"
-    className="mt-4 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold transition hover:bg-blue-600"
-  >
-    Enable 2FA
-  </button>
-) :(
-  <div>
-
-
-  <button
-    onClick={() => router.push("/two-factor/disable")}
-    type="button"
-    className="mt-4 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold transition hover:bg-blue-600"
-  >
-    Disable 2FA
-  </button>
-
-
-    <div className="mt-4 rounded-lg border border-gray-700 bg-[#1a1a1a] px-4 py-3">
-  <p className="text-sm text-gray-400">
-    Backup Codes
-  </p>
-
-  <p className="mt-1 text-lg font-semibold text-white">
-    {user.backupCodesRemaining} remaining
-  </p>
+        {!user.twoFactorEnabled ? (
           <button
-    onClick={() => router.push("/two-factor/regenerate-password")}
-    type="button"
-    className="mt-4 rounded-lg bg-blue-500 px-4 py-2 m-5 text-sm font-semibold transition hover:bg-blue-600"
-  >
-    Regenerate Backup Codes
-  </button>
-</div>
+            onClick={() => router.push("/two-factor/setup")}
+            type="button"
+            className="mt-4 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold transition hover:bg-blue-600"
+          >
+            Enable 2FA
+          </button>
+        ) : (
+          <div>
+            <button
+              onClick={() => router.push("/two-factor/disable")}
+              type="button"
+              className="mt-4 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold transition hover:bg-blue-600"
+            >
+              Disable 2FA
+            </button>
 
-    </div>
-    
-)}
+            <div className="mt-4 rounded-lg border border-gray-700 bg-[#1a1a1a] px-4 py-3">
+              <p className="text-sm text-gray-400">
+                Backup Codes
+              </p>
 
+              <p className="mt-1 text-lg font-semibold text-white">
+                {backupCodesRemaining} remaining
+              </p>
 
+              <button
+                onClick={() =>
+                  router.push(
+                    "/two-factor/regenerate-password"
+                  )
+                }
+                type="button"
+                className="mt-4 m-5 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold transition hover:bg-blue-600"
+              >
+                Regenerate Backup Codes
+              </button>
+            </div>
+          </div>
+        )}
       </main>
-
-
     </div>
   );
 }
