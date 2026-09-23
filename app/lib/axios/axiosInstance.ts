@@ -1,4 +1,7 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios, {
+  AxiosError,
+  InternalAxiosRequestConfig,
+} from "axios";
 
 let isRefreshing = false;
 
@@ -10,6 +13,19 @@ let failedQueue: {
 interface RetryRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
+
+const noRefreshRoutes = [
+  "/api/auth/signup",
+  "/api/auth/login",
+  "/api/auth/google",
+  "/api/auth/google/callback",
+  "/api/auth/verify-email",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/auth/refresh",
+  "/api/auth/logout",
+  "/api/auth/logout-all",
+];
 
 const processQueue = (error?: unknown) => {
   failedQueue.forEach(({ resolve, reject }) => {
@@ -33,14 +49,20 @@ axiosInstance.interceptors.response.use(
   },
 
   async (error: AxiosError) => {
-    const originalRequest = error.config as RetryRequestConfig;
+    const originalRequest = error.config as RetryRequestConfig | undefined;
+
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    const isNoRefreshRoute = noRefreshRoutes.includes(
+      originalRequest.url ?? ""
+    );
 
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      originalRequest.url !== "/api/auth/refresh" &&
-      originalRequest.url !== "/api/auth/logout" &&
-      originalRequest.url !== "/api/auth/logout-all"
+      !isNoRefreshRoute
     ) {
       originalRequest._retry = true;
 

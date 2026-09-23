@@ -1,3 +1,4 @@
+
 import type { ButtonHTMLAttributes } from "react";
 
 type ButtonVariant = "primary" | "secondary" | "accent";
@@ -5,6 +6,7 @@ type ButtonVariant = "primary" | "secondary" | "accent";
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   loading?: boolean;
+  loadingText?: string;
   fullWidth?: boolean;
 }
 
@@ -12,6 +14,7 @@ const Button = ({
   children,
   variant = "primary",
   loading = false,
+  loadingText = "Loading",
   fullWidth = false,
   disabled,
   className = "",
@@ -36,13 +39,14 @@ const Button = ({
       {...props}
     >
       {loading ? (
-        <>
-          <span
-            aria-hidden="true"
-            className="mr-2 size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
-          />
-          Loading...
-        </>
+        <span className="inline-flex items-center">
+          {loadingText}
+          <span aria-hidden="true" className="ml-1 inline-flex">
+            <span className="animate-bounce">.</span>
+            <span className="animate-bounce [animation-delay:150ms]">.</span>
+            <span className="animate-bounce [animation-delay:300ms]">.</span>
+          </span>
+        </span>
       ) : (
         children
       )}

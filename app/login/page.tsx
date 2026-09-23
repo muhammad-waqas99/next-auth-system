@@ -1,141 +1,196 @@
-  "use client";
-  import React from "react";
-  import axios from "axios";
-  import Link from "next/link";
-  import { useRouter } from "next/navigation";
-  import { useState } from "react";
-  import { loginSchema } from "../lib/validationSchema/auth.schema";
+
+"use client";
+
+import React, { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+
+import Input from "../components/ui/Input/Input";
+import FormField from "../components/ui/FormField/FormField";
+import Button from "../components/ui/Button/Button";
+
+import { loginSchema } from "../lib/validationSchema/auth.schema";
 import { validateForm } from "../lib/validationSchema/validateForm";
-  interface LoginForm {
-    email: string;
-    password: string;
-  }
-  export default function Login() {
+import { axiosInstance } from "../lib/axios/axiosInstance";
 
-    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-    const [isLoggingIn, setIsLoggingIn] = useState(false);
-        const router = useRouter()
-      const [user, setUser] = useState<LoginForm>({
-        email:"",
-        password:""
-      })
-    
-    const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setUser({ ...user, [e.target.name]: e.target.value });
-      console.log(user)
-    };
-    
-    const onLogin = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-
-        e.preventDefault();
-        if (isLoggingIn) return;
-
-setIsLoggingIn(true)
-setFormErrors({});
-
-const result = validateForm(loginSchema, user);
-
-if (!result.success) {
-  setFormErrors(result.errors);
-  return;
+interface LoginForm {
+  email: string;
+  password: string;
 }
 
-        
-    
-      try {
-        const response = await axios.post("/api/auth/login", result.data);
-    
+export default function Login() {
+  const router = useRouter();
 
-    toast.success(response.data.message);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-    if (response.data.requiresTwoFactor) {
+  const [user, setUser] = useState<LoginForm>({
+    email: "",
+    password: "",
+  });
+
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUser({ ...user, [e.target.name]: e.target.value });
+  };
+
+  const onLogin = async (e: React.SyntheticEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (isLoggingIn) return;
+
+    setFormErrors({});
+
+    const result = validateForm(loginSchema, user);
+
+    if (!result.success) {
+      setFormErrors(result.errors);
+      return;
+    }
+
+    try {
+      setIsLoggingIn(true);
+
+      const response = await axiosInstance.post(
+        "/api/auth/login",
+        result.data
+      );
+
       toast.success(response.data.message);
-  router.push(
-    `/two-factor/login?challenge=${response.data.challenge}`
-  );
-  return;
-}
-        router.push("/profile");
-      } catch (error:any) {
-        console.log("Something went wrong");
-        toast.error(
-  error.response?.data?.message ||
-    "Something went wrong"
-);
-      }finally{
-        setIsLoggingIn(false)
+
+      if (response.data.requiresTwoFactor) {
+        router.push(
+          `/two-factor/login?challenge=${response.data.challenge}`
+        );
+        return;
       }
-    };
-    
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <form className="flex w-full max-w-md flex-col items-center bg-black rounded-4xl p-8 shadow-2xl gap-3" onSubmit={onLogin}>
-          <h1 className="font-bold text-3xl text-white ">Login</h1>
-          <p className="text-sm  text-center   w-full text-[#9A9A9A] ">
+
+      router.push("/profile");
+    } catch (error: any) {
+      console.log("Something went wrong");
+
+      toast.error(
+        error.response?.data?.message || "Something went wrong"
+      );
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const onGoogleClick = () => {
+    window.location.href = "/api/auth/google";
+  };
+
+  return (
+    <main className="flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="w-full max-w-110">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            Welcome back
+          </h1>
+
+          <p className="mt-2 text-sm text-secondary">
             Enter your credentials to access your account
           </p>
+        </div>
 
-
-
-          <div className="flex flex-col items-start w-full px-8 mb-1.5 mt-3">
-            <label htmlFor="email" className="text-white text-sm ">
-              Email
-            </label>
-            <input
-            name="email"
-              type="email"
+        <form onSubmit={onLogin} className="flex flex-col gap-5">
+          <FormField
+            label="Email"
+            id="email"
+            error={formErrors.email}
+          >
+            <Input
               id="email"
-              placeholder="youremail@gmail.com"
-              className=" w-full p-3  mt-1 rounded-lg bg-[#1C1C1C]            transition duration-200
-            hover:bg-[#242424]
-            focus:outline-none
-            focus:ring-2 focus:ring-yellow-300 "
-            onChange={onChange}
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              value={user.email}
+              onChange={onChange}
+              error={!!formErrors.email}
+              autoComplete="email"
             />
-                    {formErrors.email && (
-    <p className="mt-1 text-sm text-red-400">
-      {formErrors.email}
-    </p>
-  )}
-          </div>
+          </FormField>
 
-          <div className="flex flex-col items-start w-full px-8 mb-1.5 mt-3">
-            <label htmlFor="password" className="text-white text-sm ">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              placeholder="*******"
-              className=" w-full p-3  mt-1 rounded-lg bg-[#1C1C1C]            transition duration-200
-            hover:bg-[#242424]
-            focus:outline-none
-            focus:ring-2 focus:ring-yellow-300"
-            onChange={onChange}
-            />
-                    {formErrors.password && (
-    <p className="mt-1 text-sm text-red-400">
-      {formErrors.password}
-    </p>
-  )}
-          </div>
+          <FormField
+            label="Password"
+            id="password"
+            error={formErrors.password}
+          >
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={user.password}
+                onChange={onChange}
+                error={!!formErrors.password}
+                autoComplete="current-password"
+                className="pr-16"
+              />
 
-          <Link href={'/forget-password'} className="w-full px-8 text-sm text-blue-500 hover:underline text-right" >ForgetPassword?</Link>
-          <div className="px-8 w-full mt-4">
-            <button disabled={isLoggingIn} type="submit" className="w-full  py-3 rounded-lg  text-black  font-bold text-lg bg-yellow-400 hover:bg-yellow-500 ">
-               {isLoggingIn ? "Logging in..." : "Login"}
-            </button>
-          </div>
-          <p className="text-sm  text-center   w-full text-[#9A9A9A] ">
-            Don't have an account?
-            <Link href="/signup" className="text-yellow-300 hover:underline ml-1">
-              Create an account
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-secondary transition-colors duration-150 hover:text-foreground"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+          </FormField>
+
+          <div className="flex justify-end -mt-1">
+            <Link
+              href="/forget-password"
+              className="text-sm text-accent hover:underline"
+            >
+              Forgot password?
             </Link>
-          </p>
-        </form>
-      </div>
+          </div>
 
-    );
-  }
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth
+            loading={isLoggingIn}
+            loadingText="Logging in"
+          >
+            Login
+          </Button>
+        </form>
+
+        <div className="my-6 flex items-center gap-4">
+          <div className="h-px flex-1 bg-border" />
+
+          <span className="text-xs text-muted">OR</span>
+
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          fullWidth
+          onClick={onGoogleClick}
+          disabled={isLoggingIn}
+        >
+          <span className="mr-2 text-base font-semibold">G</span>
+          Continue with Google
+        </Button>
+
+        <p className="mt-6 text-center text-sm text-secondary">
+          Don't have an account?{" "}
+          <Link
+            href="/signup"
+            className="font-medium text-accent hover:underline"
+          >
+            Create an account
+          </Link>
+        </p>
+      </div>
+    </main>
+  );
+}
+
