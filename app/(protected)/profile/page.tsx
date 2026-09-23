@@ -9,6 +9,7 @@ import { axiosInstance } from "@/app/lib/axios/axiosInstance";
 import { useAuthStore } from "@/app/store/auth/authStore";
 
 import ProfileSkeleton from "./components/ProfileSkeleton";
+import ThemeSelector from "@/app/components/ui/ThemeSelector/ThemeSelector";
 
 export default function Profile() {
   const router = useRouter();
@@ -120,7 +121,9 @@ export default function Profile() {
   }
 
   return (
+   
     <div className="min-h-screen bg-[#111111] text-white">
+       <ThemeSelector/>
       <nav className="flex items-center justify-between px-8 py-5">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-bold">{user.name}</h1>

@@ -23,13 +23,16 @@ const Button = ({
   const baseStyles =
     "inline-flex min-h-11 items-center justify-center rounded-lg px-5 py-2.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
-  const variants = {
-    primary: "bg-foreground text-white hover:bg-black/85",
-    secondary:
-      "border border-border bg-surface text-foreground hover:bg-background",
-    accent: "bg-accent text-white hover:bg-accent/90",
-  };
+const variants = {
+  primary:
+    "bg-foreground text-background hover:opacity-85",
 
+  secondary:
+    "border border-border bg-surface text-foreground hover:bg-background",
+
+  accent:
+    "bg-accent text-white hover:opacity-90",
+};
   return (
     <button
       disabled={disabled || loading}
