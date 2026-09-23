@@ -11,7 +11,8 @@ import Button from "@/app/components/ui/Button/Button";
 
 import { verifyOtpSchema } from "@/app/lib/validationSchema/auth.schema";
 import { validateForm } from "@/app/lib/validationSchema/validateForm";
-import { axiosInstance } from "@/app/lib/axios/axiosInstance";
+
+import axios from "axios";
 
 export default function TwoFactorLogin() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function TwoFactorLogin() {
     try {
       setIsVerifying(true);
 
-      const response = await axiosInstance.post(
+      const response = await axios.post(
         "/api/auth/2fa/verify-login",
         result.data
       );

@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       secret: user.twoFactorSecret,
     });
 
-    if (!isValidOtp) {
+    if (!isValidOtp.valid) {
       throw new AppError(
         ERROR_CODES.INVALID_OTP,
         ERROR_MESSAGES.INVALID_OTP,

@@ -10,7 +10,8 @@ import Button from "@/app/components/ui/Button/Button";
 
 import { validateForm } from "@/app/lib/validationSchema/validateForm";
 import { backupLoginSchema } from "@/app/lib/validationSchema/auth.schema";
-import { axiosInstance } from "@/app/lib/axios/axiosInstance";
+
+import axios from "axios";
 
 export default function BackupLoginPage() {
   const searchParams = useSearchParams();
@@ -42,7 +43,7 @@ export default function BackupLoginPage() {
     try {
       setLoading(true);
 
-      const response = await axiosInstance.post(
+      const response = await axios.post(
         "/api/auth/2fa/backup-login",
         result.data
       );

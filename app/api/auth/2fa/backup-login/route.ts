@@ -58,7 +58,18 @@ export async function POST(request: NextRequest) {
 
     const userId = loginChallenge.userId.toString();
 
-    await consumeBackupCode(userId, backupCode);
+   const isValidBackupCode = await consumeBackupCode(
+  userId,
+  backupCode
+);
+
+if (!isValidBackupCode) {
+  throw new AppError(
+    ERROR_CODES.INVALID_BACKUP_CODE,
+    ERROR_MESSAGES.INVALID_BACKUP_CODE,
+    401
+  );
+}
 
     const challengeResult = await LoginChallenge.updateOne(
       {

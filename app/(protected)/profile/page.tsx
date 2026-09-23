@@ -1,15 +1,27 @@
+
 "use client";
 
 import axios from "axios";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import {
+  Check,
+  Clock3,
+  KeyRound,
+  Laptop,
+  LogOut,
+  Mail,
+  MonitorSmartphone,
+  ShieldCheck,
+  User,
+} from "lucide-react";
 
 import { axiosInstance } from "@/app/lib/axios/axiosInstance";
 import { useAuthStore } from "@/app/store/auth/authStore";
 
 import ProfileSkeleton from "./components/ProfileSkeleton";
 import ThemeSelector from "@/app/components/ui/ThemeSelector/ThemeSelector";
+import Button from "@/app/components/ui/Button/Button";
 
 export default function Profile() {
   const router = useRouter();
@@ -20,6 +32,9 @@ export default function Profile() {
     (state) => state.backupCodesRemaining
   );
   const clearUser = useAuthStore((state) => state.clearUser);
+
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState("");
 
   const getTimeAgo = (date: string) => {
     const diff = Date.now() - new Date(date).getTime();
@@ -37,9 +52,6 @@ export default function Profile() {
     return new Date(date).toLocaleDateString();
   };
 
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState("");
-
   useEffect(() => {
     const getSessions = async () => {
       try {
@@ -50,7 +62,10 @@ export default function Profile() {
         setSessions(response.data.sessions);
         setCurrentSessionId(response.data.currentSessionId);
       } catch (error: any) {
-        console.log("PROFILE CATCH:", error.response?.status);
+        console.log(
+          "PROFILE CATCH:",
+          error.response?.status
+        );
         console.log("PROFILE ERROR:", error.message);
 
         if (error.response?.status === 401) {
@@ -61,6 +76,7 @@ export default function Profile() {
 
     getSessions();
   }, [router]);
+
 
   const onLogout = async () => {
     try {
@@ -73,6 +89,7 @@ export default function Profile() {
     }
   };
 
+  // Logout all sessions.
   const onLogoutAll = async () => {
     try {
       await axios.post("/api/auth/logout-all");
@@ -84,16 +101,10 @@ export default function Profile() {
     }
   };
 
+  // Logout a specific session.
+
   const onLogoutSession = async (sessionId: string) => {
     try {
-      if (sessionId === currentSessionId) {
-        await axios.post("/api/auth/logout");
-
-        clearUser();
-        router.push("/login");
-        return;
-      }
-
       await axios.post("/api/auth/logout-session", {
         sessionId,
       });
@@ -120,206 +131,433 @@ export default function Profile() {
     return null;
   }
 
+  const isGoogleOnly =
+    user.authMethods.includes("google") &&
+    !user.authMethods.includes("email");
+
   return (
-   
-    <div className="min-h-screen bg-[#111111] text-white">
-       <ThemeSelector/>
-      <nav className="flex items-center justify-between px-8 py-5">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold">{user.name}</h1>
+    <main className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-6 lg:py-14">
 
-          {user.isVerified && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-xs font-bold text-black">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 640 640"
-              >
-                <path d="M530.8 134.1C545.1 144.5 548.3 164.5 537.9 178.8L281.9 530.8C276.4 538.4 267.9 543.1 258.5 543.9C249.1 544.7 240 541.2 233.4 534.6L105.4 406.6C92.9 394.1 92.9 373.8 105.4 361.3C117.9 348.8 138.2 348.8 150.7 361.3L252.2 462.8L486.2 141.1C496.6 126.8 516.6 123.6 530.9 134z" />
-              </svg>
-            </span>
-          )}
-        </div>
+        {/* Header */}
+        <header className="mb-10">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            Profile
+          </h1>
 
-        {user.authMethods.includes("google") &&
-        !user.authMethods.includes("email") ? (
-          <Link
-            href="/set-password"
-            className="my-2 rounded-lg bg-green-500 px-5 py-2 font-semibold transition hover:bg-green-600"
-          >
-            Set Password
-          </Link>
-        ) : (
-          <Link
-            href="/change-password"
-            className="my-2 rounded-lg bg-green-500 px-5 py-2 font-semibold transition hover:bg-green-600"
-          >
-            Change Password
-          </Link>
-        )}
-
-        <button
-          onClick={onLogout}
-          type="button"
-          className="rounded-lg bg-red-500 px-5 py-2 font-semibold transition hover:bg-red-600"
-        >
-          Logout
-        </button>
-
-        <button
-          onClick={onLogoutAll}
-          type="button"
-          className="rounded-lg bg-red-500 px-5 py-2 font-semibold transition hover:bg-red-600"
-        >
-          Logout All
-        </button>
-      </nav>
-
-      <main className="flex min-h-[80vh] flex-col items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold">
-            Welcome to your profile
-          </h2>
-
-          <div className="mt-5 space-y-2">
-            <p className="text-gray-300">
-              <span className="font-semibold">Name:</span>{" "}
-              {user.name}
-            </p>
-
-            <p className="text-gray-300">
-              <span className="font-semibold">Email:</span>{" "}
-              {user.email}
-            </p>
-
-            <p className="text-gray-300 uppercase font-bold">
-              {user.authMethods.join(" + ")}
-            </p>
-
-            <p
-              className={
-                user.isVerified
-                  ? "font-semibold text-green-400"
-                  : "font-semibold text-red-400"
-              }
-            >
-              {user.isVerified
-                ? "✓ Email Verified"
-                : "✕ Email Not Verified"}
-            </p>
-          </div>
-
-          <p className="mt-4 text-gray-400">
-            Your profile information will appear here.
+          <p className="mt-2 text-base text-secondary">
+            Manage your account and security settings.
           </p>
-        </div>
+        </header>
 
-        <div className="mt-10 w-full max-w-2xl">
-          <h3 className="mb-4 text-2xl font-bold">
-            Active Sessions
-          </h3>
+        {/* Personal Information + Appearance */}
+        <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
 
-          <div className="space-y-3">
-            {sessions.map((session) => (
-              <div
-                key={session.sessionId}
-                className="rounded-xl border border-gray-700 bg-[#1a1a1a] p-5"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-lg font-semibold">
-                        {session.browser} on {session.os}
-                      </p>
-
-                      {session.sessionId === currentSessionId && (
-                        <span className="rounded-full bg-green-500 px-2.5 py-1 text-xs font-semibold text-black">
-                          Current
-                        </span>
-                      )}
-                    </div>
-
-                    <p className="mt-1 text-sm text-gray-400">
-                      {session.device}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      onLogoutSession(session.sessionId)
-                    }
-                    type="button"
-                    className="shrink-0 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold transition hover:bg-red-600"
-                  >
-                    Logout
-                  </button>
+          {/* Personal Information */}
+          <section className="flex h-full flex-col rounded-xl border border-border bg-surface p-6 sm:p-7">
+            <div className="mb-8">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border">
+                  <User size={18} />
                 </div>
 
-                <div className="mt-4 space-y-1 border-t border-gray-700 pt-3">
-                  <p className="text-sm text-gray-400">
-                    Created:{" "}
-                    <span className="text-gray-300">
-                      {new Date(
-                        session.createdAt
-                      ).toLocaleString()}
-                    </span>
+                <h2 className="text-xl font-semibold">
+                  Personal information
+                </h2>
+              </div>
+
+              <p className="mt-3 text-sm text-secondary">
+                Your basic account information.
+              </p>
+            </div>
+
+            <div className="flex flex-1 flex-col gap-8">
+
+              {/* Name */}
+              <div className="flex items-start gap-3">
+                <User
+                  size={18}
+                  className="mt-0.5 shrink-0 text-muted"
+                />
+
+                <div>
+                  <p className="text-sm font-medium text-secondary">
+                    Name
                   </p>
 
-                  {session.lastUsedAt && (
-                    <p className="text-sm text-gray-400">
-                      Last used:{" "}
-                      <span className="text-gray-300">
-                        {getTimeAgo(session.lastUsedAt)}
-                      </span>
-                    </p>
-                  )}
+                  <p className="mt-1 text-base font-medium">
+                    {user.name}
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
+
+              {/* Email */}
+              <div className="flex items-start gap-3">
+                <Mail
+                  size={18}
+                  className="mt-0.5 shrink-0 text-muted"
+                />
+
+                <div>
+                  <p className="text-sm font-medium text-secondary">
+                    Email
+                  </p>
+
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <p className="text-base font-medium">
+                      {user.email}
+                    </p>
+
+                    {user.isVerified && (
+                      <span className="inline-flex items-center gap-1 text-sm font-medium text-success">
+                        <Check size={15} />
+                        Verified
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Authentication Methods */}
+              <div className="flex items-start gap-3">
+                <ShieldCheck
+                  size={18}
+                  className="mt-0.5 shrink-0 text-muted"
+                />
+
+                <div>
+                  <p className="text-sm font-medium text-secondary">
+                    Authentication methods
+                  </p>
+
+                  <p className="mt-1 text-base font-medium">
+                    {user.authMethods
+                      .map((method) =>
+                        method === "email"
+                          ? "Email"
+                          : "Google"
+                      )
+                      .join(" + ")}
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          {/* Appearance */}
+          <section className="flex h-full flex-col rounded-xl border border-border bg-surface p-6 sm:p-7">
+            <div className="mb-8">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border">
+                  <MonitorSmartphone size={18} />
+                </div>
+
+                <h2 className="text-xl font-semibold">
+                  Appearance
+                </h2>
+              </div>
+
+              <p className="mt-3 text-sm text-secondary">
+                Customize how the application looks.
+              </p>
+            </div>
+
+            <div className="flex flex-1 flex-col justify-between">
+
+              {/* Theme */}
+              <div className="flex items-start gap-3">
+                <MonitorSmartphone
+                  size={18}
+                  className="mt-0.5 shrink-0 text-muted"
+                />
+
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-secondary">
+                    Theme
+                  </p>
+
+                  <p className="mt-1 text-base font-medium">
+                    Choose your preferred appearance.
+                  </p>
+
+                  <div className="mt-4">
+                    <ThemeSelector />
+                  </div>
+                </div>
+              </div>
+
+              {/* Theme persistence */}
+              <div className="mt-10 flex items-start gap-3 border-t border-border pt-6">
+                <Check
+                  size={17}
+                  className="mt-0.5 shrink-0 text-success"
+                />
+
+                <p className="text-sm text-secondary">
+                  Your theme preference is saved automatically
+                  and will be remembered on your next visit.
+                </p>
+              </div>
+
+            </div>
+          </section>
+
         </div>
 
-        {!user.twoFactorEnabled ? (
-          <button
-            onClick={() => router.push("/two-factor/setup")}
-            type="button"
-            className="mt-4 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold transition hover:bg-blue-600"
-          >
-            Enable 2FA
-          </button>
-        ) : (
-          <div>
-            <button
-              onClick={() => router.push("/two-factor/disable")}
-              type="button"
-              className="mt-4 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold transition hover:bg-blue-600"
-            >
-              Disable 2FA
-            </button>
+        {/* Security */}
+        <section className="mt-10">
+          <div className="mb-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border">
+                <ShieldCheck size={18} />
+              </div>
 
-            <div className="mt-4 rounded-lg border border-gray-700 bg-[#1a1a1a] px-4 py-3">
-              <p className="text-sm text-gray-400">
-                Backup Codes
-              </p>
+              <h2 className="text-2xl font-semibold">
+                Security
+              </h2>
+            </div>
 
-              <p className="mt-1 text-lg font-semibold text-white">
-                {backupCodesRemaining} remaining
-              </p>
+            <p className="mt-3 text-sm text-secondary">
+              Manage your password and account security.
+            </p>
+          </div>
 
-              <button
+          <div className="rounded-xl border border-border bg-surface">
+
+            {/* Password */}
+            <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-4">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border">
+                  <KeyRound size={17} />
+                </div>
+
+                <div>
+                  <h3 className="text-base font-medium">
+                    Password
+                  </h3>
+
+                  <p className="mt-1 text-sm text-secondary">
+                    Manage your account password.
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="secondary"
                 onClick={() =>
                   router.push(
-                    "/two-factor/regenerate-password"
+                    isGoogleOnly
+                      ? "/set-password"
+                      : "/change-password"
                   )
                 }
-                type="button"
-                className="mt-4 m-5 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold transition hover:bg-blue-600"
               >
-                Regenerate Backup Codes
-              </button>
+                {isGoogleOnly
+                  ? "Set Password"
+                  : "Change Password"}
+              </Button>
             </div>
+
+            <div className="border-t border-border" />
+
+            {/* Two Factor */}
+            <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-4">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border">
+                  <ShieldCheck size={17} />
+                </div>
+
+                <div>
+                  <h3 className="text-base font-medium">
+                    Two-factor authentication
+                  </h3>
+
+                  <p className="mt-1 text-sm text-secondary">
+                    {user.twoFactorEnabled
+                      ? "Your account is protected with two-factor authentication."
+                      : "Add an extra layer of security to your account."}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  router.push(
+                    user.twoFactorEnabled
+                      ? "/two-factor/disable"
+                      : "/two-factor/setup"
+                  )
+                }
+              >
+                {user.twoFactorEnabled
+                  ? "Disable 2FA"
+                  : "Enable 2FA"}
+              </Button>
+            </div>
+
+            {/* Backup Codes */}
+            {user.twoFactorEnabled && (
+              <>
+                <div className="border-t border-border" />
+
+                <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border">
+                      <KeyRound size={17} />
+                    </div>
+
+                    <div>
+                      <h3 className="text-base font-medium">
+                        Backup codes
+                      </h3>
+
+                      <p className="mt-1 text-sm text-secondary">
+                        {backupCodesRemaining} remaining
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="secondary"
+                    onClick={() =>
+                      router.push(
+                        "/two-factor/regenerate-password"
+                      )
+                    }
+                  >
+                    Regenerate
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
-        )}
-      </main>
+        </section>
+
+        {/* Active Sessions */}
+
+<section className="mt-10">
+  <div className="mb-5">
+    <div className="flex items-center gap-3">
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border">
+        <Laptop size={18} />
+      </div>
+
+      <h2 className="text-2xl font-semibold">
+        Active sessions
+      </h2>
     </div>
+
+    <p className="mt-3 text-sm text-secondary">
+      Manage the devices currently signed in to your account.
+    </p>
+  </div>
+
+  <div className="overflow-hidden rounded-xl border border-border bg-surface">
+    {sessions.map((session) => {
+      const isCurrent =
+        session.sessionId === currentSessionId;
+
+      return (
+        <div
+          key={session.sessionId}
+          className="flex flex-col gap-5 border-b border-border p-6 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex min-w-0 items-start gap-4">
+            {/* Device Icon */}
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border">
+              <MonitorSmartphone size={18} />
+            </div>
+
+
+<div className="min-w-0">
+  <div className="flex flex-wrap items-center gap-2">
+    <h3 className="font-medium">
+      {session.browser}
+    </h3>
+
+    {isCurrent && (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-success">
+        <Check size={13} />
+        Current session
+      </span>
+    )}
+  </div>
+
+  <p className="mt-1 text-sm text-secondary">
+    {session.os} · {session.device}
+  </p>
+
+  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+    {!isCurrent && (
+      <span className="flex items-center gap-1.5">
+        <Clock3 size={13} />
+        Active {getTimeAgo(session.createdAt)}
+      </span>
+    )}
+
+    <span>
+      Created at{" "}
+      {new Date(session.createdAt).toLocaleString()}
+    </span>
+  </div>
+</div>
+
+
+          </div>
+
+          {isCurrent ? (
+            <Button
+              variant="secondary"
+              onClick={onLogout}
+              className="w-full shrink-0 sm:w-auto"
+            >
+              <LogOut size={16} className="mr-2" />
+              Log out
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              onClick={() =>
+                onLogoutSession(session.sessionId)
+              }
+              className="w-full shrink-0 sm:w-auto"
+            >
+              <LogOut size={16} className="mr-2" />
+              Log out
+            </Button>
+          )}
+        </div>
+      );
+    })}
+
+    {sessions.length === 0 && (
+      <div className="p-8 text-center">
+        <p className="text-sm text-secondary">
+          No active sessions found.
+        </p>
+      </div>
+    )}
+  </div>
+
+  {/* Logout All */}
+  {sessions.length > 1 && (
+    <div className="mt-4 flex justify-end">
+      <Button
+        variant="secondary"
+        onClick={onLogoutAll}
+      >
+        <LogOut size={16} className="mr-2" />
+        Log out all sessions
+      </Button>
+    </div>
+  )}
+</section>
+
+
+
+      </div>
+    </main>
   );
 }
