@@ -1,11 +1,17 @@
 
 "use client";
 
-import axios from "axios";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+
 import { forgotPasswordSchema } from "../lib/validationSchema/auth.schema";
 import { validateForm } from "../lib/validationSchema/validateForm";
+
+
+import Input from "../components/ui/Input/Input";
+import FormField from "../components/ui/FormField/FormField";
+import Button from "../components/ui/Button/Button";
+import axios from "axios";
 
 type ResetStatus =
   | "idle"
@@ -15,9 +21,7 @@ type ResetStatus =
   | "error";
 
 export default function ForgetPassword() {
-
-   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-    
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [resetRequestId, setResetRequestId] =
     useState<string | null>(null);
 
@@ -25,10 +29,7 @@ export default function ForgetPassword() {
     useState<ResetStatus>("idle");
 
   const [email, setEmail] = useState("");
-
-  const [errorMessage, setErrorMessage] =
-    useState("");
-
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (!resetRequestId) return;
@@ -50,7 +51,6 @@ export default function ForgetPassword() {
       }
     };
 
-
     checkResetStatus();
 
     const interval = setInterval(() => {
@@ -63,28 +63,31 @@ export default function ForgetPassword() {
   }, [resetRequestId]);
 
   const onSubmit = async (
-    e: React.SyntheticEvent<HTMLFormElement>
+    e: React.SubmitEvent<HTMLFormElement>
   ) => {
-           e.preventDefault();
-setFormErrors({});
+    e.preventDefault();
 
-const result = validateForm(forgotPasswordSchema,email);
+    if (status === "loading") return;
 
-if (!result.success) {
-  setFormErrors(result.errors);
-  return;
-}
+    setFormErrors({});
+    setErrorMessage("");
 
+    const result = validateForm(
+      forgotPasswordSchema,
+      { email }
+    );
+
+    if (!result.success) {
+      setFormErrors(result.errors);
+      return;
+    }
 
     try {
       setStatus("loading");
-      setErrorMessage("");
 
       const response = await axios.post(
         "/api/auth/forget-password",
-        
         result.data
-        
       );
 
       setResetRequestId(
@@ -92,7 +95,6 @@ if (!result.success) {
       );
 
       setStatus("success");
-
     } catch (error: any) {
       console.log(
         "Something Went Wrong!",
@@ -109,137 +111,161 @@ if (!result.success) {
   };
 
   return (
-    <main className="min-h-screen bg-black flex items-center justify-center px-4">
+    <main className="flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="w-full max-w-110">
 
-      <div className="w-full max-w-md">
-
+        {/* Success: Email Sent */}
         {status === "success" && (
-
-          <div className="p-8 rounded-2xl border border-zinc-800 bg-zinc-950 text-center">
-
-            <div className="text-4xl mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M530.8 134.1C545.1 144.5 548.3 164.5 537.9 178.8L281.9 530.8C276.4 538.4 267.9 543.1 258.5 543.9C249.1 544.7 240 541.2 233.4 534.6L105.4 406.6C92.9 394.1 92.9 373.8 105.4 361.3C117.9 348.8 138.2 348.8 150.7 361.3L252.2 462.8L486.2 141.1C496.6 126.8 516.6 123.6 530.9 134z"/></svg>
+          <div className="rounded-xl border border-border bg-surface p-8 text-center">
+            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-6 w-6"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m5 12 4 4L19 6"
+                />
+              </svg>
             </div>
 
-            <h1 className="text-2xl font-semibold text-white mb-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               Check Your Email
             </h1>
 
-            <p className="text-zinc-400 text-sm mb-2">
+            <p className="mt-2 text-sm text-secondary">
               We've sent a password reset link to
             </p>
 
-            <p className="text-white mb-6">
+            <p className="mt-1 break-all font-medium text-foreground">
               {email}
             </p>
 
-            <p className="text-sm text-zinc-500">
+            <p className="mt-6 text-sm text-muted">
               The reset link will expire in 15 minutes.
             </p>
 
-            <p className="text-sm text-zinc-500 mt-3">
+            <p className="mt-3 text-sm text-muted">
               Waiting for password reset...
             </p>
-
           </div>
-
         )}
 
+        {/* Success: Password Reset */}
         {status === "reset" && (
-
-          <div className="p-8 rounded-2xl border border-zinc-800 bg-zinc-950 text-center">
-
-            <div className="text-4xl mb-4">
-             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M530.8 134.1C545.1 144.5 548.3 164.5 537.9 178.8L281.9 530.8C276.4 538.4 267.9 543.1 258.5 543.9C249.1 544.7 240 541.2 233.4 534.6L105.4 406.6C92.9 394.1 92.9 373.8 105.4 361.3C117.9 348.8 138.2 348.8 150.7 361.3L252.2 462.8L486.2 141.1C496.6 126.8 516.6 123.6 530.9 134z"/></svg>
+          <div className="rounded-xl border border-border bg-surface p-8 text-center">
+            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-6 w-6"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m5 12 4 4L19 6"
+                />
+              </svg>
             </div>
 
-            <h1 className="text-2xl font-semibold text-white mb-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               Password Reset Successfully
             </h1>
 
-            <p className="text-sm text-zinc-400 mb-6">
+            <p className="mt-2 text-sm text-secondary">
               Your password has been changed successfully.
             </p>
 
-            <Link
-              href="/login"
-              className="block w-full py-3 rounded-lg bg-white text-black font-medium"
-            >
-              Go to Login
-            </Link>
-
+            <div className="mt-6">
+              <Link href="/login">
+                <Button
+                  type="button"
+                  variant="primary"
+                  fullWidth
+                >
+                  Go to Login
+                </Button>
+              </Link>
+            </div>
           </div>
-
         )}
 
+        {/* Forgot Password Form */}
         {(status === "idle" ||
           status === "loading" ||
           status === "error") && (
+          <div>
+            <div className="mb-8">
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                Forgot Password?
+              </h1>
 
-          <form
-            onSubmit={onSubmit}
-            className="p-8 rounded-2xl border border-zinc-800 bg-zinc-950"
-          >
-
-            <h1 className="text-2xl font-semibold text-white mb-2">
-              Forgot Password?
-            </h1>
-
-            <p className="text-sm text-zinc-400 mb-6">
-              Enter your email and we'll send you a
-              password reset link.
-            </p>
-
-            <label
-              htmlFor="email"
-              className="block text-sm text-zinc-300 mb-2"
-            >
-              Email
-            </label>
-
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={email}
-              placeholder="Enter your email"
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
-              className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white outline-none focus:border-white"
-            />
-                                    {formErrors.email && (
-    <p className="mt-1 text-sm text-red-400">
-      {formErrors.email}
-    </p>)}
-            {status === "error" && (
-              <p className="text-sm text-red-400 mt-3">
-                {errorMessage}
+              <p className="mt-2 text-sm text-secondary">
+                Enter your email and we'll send you a
+                password reset link.
               </p>
-            )}
+            </div>
 
-            <button
-              type="submit"
-              disabled={status === "loading"}
-              className="w-full mt-6 py-3 bg-white text-black rounded-lg font-medium disabled:opacity-50"
+            <form
+              onSubmit={onSubmit}
+              className="flex flex-col gap-5"
             >
-              {status === "loading"
-                ? "Sending..."
-                : "Send Password Reset Email"}
-            </button>
+              <FormField
+                label="Email"
+                id="email"
+                error={formErrors.email}
+              >
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) =>
+                    setEmail(e.target.value)
+                  }
+                  error={!!formErrors.email}
+                  disabled={status === "loading"}
+                />
+              </FormField>
 
-            <Link
-              href="/login"
-              className="block text-center text-sm text-zinc-400 hover:text-white mt-5"
-            >
-              ← Back to Login
-            </Link>
+              {status === "error" && (
+                <p className="text-sm text-error">
+                  {errorMessage}
+                </p>
+              )}
 
-          </form>
+              <Button
+                type="submit"
+                variant="primary"
+                fullWidth
+                loading={status === "loading"}
+                loadingText="Sending"
+              >
+                Send Password Reset Email
+              </Button>
+
+              <Link
+                href="/login"
+                className="text-center text-sm text-secondary transition-colors duration-150 hover:text-foreground"
+              >
+                ← Back to Login
+              </Link>
+            </form>
+          </div>
         )}
-
       </div>
-
     </main>
   );
 }

@@ -1,12 +1,18 @@
+
 "use client";
 
 import axios from "axios";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { resetPasswordSchema } from "../lib/validationSchema/auth.schema";
 import toast from "react-hot-toast";
+
+import { resetPasswordSchema } from "../lib/validationSchema/auth.schema";
 import { validateForm } from "../lib/validationSchema/validateForm";
+
+import Input from "../components/ui/Input/Input";
+import FormField from "../components/ui/FormField/FormField";
+import Button from "../components/ui/Button/Button";
 
 type ResetStatus =
   | "idle"
@@ -15,11 +21,13 @@ type ResetStatus =
   | "error";
 
 export default function ResetPassword() {
-   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const searchParams = useSearchParams();
 
   const plainToken = searchParams.get("token");
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>(
+    {}
+  );
 
   const [status, setStatus] =
     useState<ResetStatus>("idle");
@@ -30,7 +38,6 @@ export default function ResetPassword() {
   const [formDetails, setFormDetails] = useState({
     password: "",
     confirmPassword: "",
-    plainToken
   });
 
   const onChange = (
@@ -43,54 +50,55 @@ export default function ResetPassword() {
   };
 
   const onSubmit = async (
-    e: React.SyntheticEvent<HTMLFormElement>
+    e: React.SubmitEvent<HTMLFormElement>
   ) => {
+    e.preventDefault();
 
- 
-           e.preventDefault();
-setFormErrors({});
+    if (status === "loading") return;
 
-const result = validateForm(resetPasswordSchema, formDetails);
+    setFormErrors({});
+    setErrorMessage("");
 
-if (!result.success) {
-  setFormErrors(result.errors);
-  return;
-}
+    const result = validateForm(
+      resetPasswordSchema,
+      {
+        ...formDetails,
+        plainToken,
+      }
+    );
 
+    if (!result.success) {
+      setFormErrors(result.errors);
+      return;
+    }
 
     try {
       setStatus("loading");
-      setErrorMessage("");
-
-
 
       const response = await axios.post(
         "/api/auth/reset-password",
         {
           password: result.data.password,
-          confirmPassword:
-            result.data.confirmPassword,
-          plainToken,
+          confirmPassword: result.data.confirmPassword,
+          plainToken: result.data.plainToken,
         }
       );
 
       toast.success(response.data.message);
 
       setStatus("success");
-
     } catch (error: any) {
       console.log(
         "Something Went Wrong!",
         error.message
       );
-    toast.error(
-  error.response?.data?.message ||
-    "Something went wrong"
-);
-      setErrorMessage(
+
+      const message =
         error.response?.data?.message ||
-          "Something went wrong"
-      );
+        "Something went wrong";
+
+      toast.error(message);
+      setErrorMessage(message);
 
       setStatus("error");
     }
@@ -98,143 +106,164 @@ if (!result.success) {
 
   if (!plainToken) {
     return (
-      <main className="min-h-screen bg-black flex items-center justify-center">
+      <main className="flex min-h-screen items-center justify-center px-6 py-12">
+        <div className="w-full max-w-110 text-center">
+          <div className="rounded-xl border border-border bg-surface p-8">
+            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-error/10 text-error">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-6 w-6"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18 18 6M6 6l12 12"
+                />
+              </svg>
+            </div>
 
-        <div className="text-center">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              Invalid Reset Link
+            </h1>
 
-          <h1 className="text-2xl text-white mb-2">
-            Invalid Reset Link
-          </h1>
+            <p className="mt-2 text-sm text-secondary">
+              Password reset token is missing.
+            </p>
 
-          <p className="text-zinc-400 mb-5">
-            Password reset token is missing.
-          </p>
-
-          <Link
-            href="/forget-password"
-            className="text-white underline"
-          >
-            Request another reset link
-          </Link>
-
+            <Link
+              href="/forget-password"
+              className="mt-6 inline-block text-sm font-medium text-foreground underline underline-offset-4 transition-opacity duration-150 hover:opacity-70"
+            >
+              Request another reset link
+            </Link>
+          </div>
         </div>
-
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-black flex items-center justify-center px-4">
-
-      <div className="w-full max-w-md">
+    <main className="flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="w-full max-w-110">
 
         {status === "success" ? (
-
-          <div className="p-8 rounded-2xl bg-zinc-950 border border-zinc-800 text-center">
-
-            <div className="text-4xl mb-4">
-                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M530.8 134.1C545.1 144.5 548.3 164.5 537.9 178.8L281.9 530.8C276.4 538.4 267.9 543.1 258.5 543.9C249.1 544.7 240 541.2 233.4 534.6L105.4 406.6C92.9 394.1 92.9 373.8 105.4 361.3C117.9 348.8 138.2 348.8 150.7 361.3L252.2 462.8L486.2 141.1C496.6 126.8 516.6 123.6 530.9 134z"/></svg>
+          <div className="rounded-xl border border-border bg-surface p-8 text-center">
+            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-6 w-6"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m5 12 4 4L19 6"
+                />
+              </svg>
             </div>
 
-            <h1 className="text-2xl font-semibold text-white mb-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               Password Changed
             </h1>
 
-            <p className="text-sm text-zinc-400 mb-6">
+            <p className="mt-2 text-sm leading-6 text-secondary">
               Your password has been reset successfully.
               You can now login using your new password.
             </p>
 
-            <Link
-              href="/login"
-              className="block w-full py-3 rounded-lg bg-white text-black font-medium"
-            >
-              Go to Login
-            </Link>
-
+            <div className="mt-6">
+              <Link href="/login">
+                <Button
+                  type="button"
+                  variant="primary"
+                  fullWidth
+                >
+                  Go to Login
+                </Button>
+              </Link>
+            </div>
           </div>
-
         ) : (
+          <>
+            <div className="mb-8">
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                Reset Password
+              </h1>
 
-          <form
-            onSubmit={onSubmit}
-            className="p-8 rounded-2xl border border-zinc-800 bg-zinc-950"
-          >
-
-            <h1 className="text-2xl font-semibold text-white mb-2">
-              Reset Password
-            </h1>
-
-            <p className="text-sm text-zinc-400 mb-6">
-              Enter your new password.
-            </p>
-
-            <label
-              htmlFor="password"
-              className="block text-sm text-zinc-300 mb-2"
-            >
-              New Password
-            </label>
-
-            <input
-              type="password"
-              id="password"
-              placeholder="Enter your new password"
-              name="password"
-              onChange={onChange}
-              className="w-full px-4 py-3 mb-5 rounded-lg bg-zinc-900 border border-zinc-800 text-white outline-none focus:border-white"
-            />
-                                {formErrors.password && (
-    <p className="mt-1 text-sm text-red-400">
-      {formErrors.password}
-    </p>
-  )}
-       
-
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm text-zinc-300 mb-2"
-            >
-              Confirm Password
-            </label>
-
-            <input
-              type="password"
-              id="confirmPassword"
-              placeholder="Confirm password"
-              name="confirmPassword"
-              onChange={onChange}
-              className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white outline-none focus:border-white"
-            />
-                                {formErrors.confirmPassword && (
-    <p className="mt-1 text-sm text-red-400">
-      {formErrors.confirmPassword}
-    </p>
-  )}
-       
-
-            {status === "error" && (
-              <p className="text-sm text-red-400 mt-3">
-                {errorMessage}
+              <p className="mt-2 text-sm text-secondary">
+                Enter your new password.
               </p>
-            )}
+            </div>
 
-            <button
-              type="submit"
-              disabled={status === "loading"}
-              className="w-full mt-6 py-3 rounded-lg bg-white text-black font-medium disabled:opacity-50"
+            <form
+              onSubmit={onSubmit}
+              className="flex flex-col gap-5"
             >
-              {status === "loading"
-                ? "Resetting..."
-                : "Reset Password"}
-            </button>
+              <FormField
+                label="New Password"
+                id="password"
+                error={formErrors.password}
+              >
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Enter your new password"
+                  value={formDetails.password}
+                  onChange={onChange}
+                  error={!!formErrors.password}
+                  disabled={status === "loading"}
+                />
+              </FormField>
 
-          </form>
+              <FormField
+                label="Confirm Password"
+                id="confirmPassword"
+                error={formErrors.confirmPassword}
+              >
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Confirm your password"
+                  value={formDetails.confirmPassword}
+                  onChange={onChange}
+                  error={!!formErrors.confirmPassword}
+                  disabled={status === "loading"}
+                />
+              </FormField>
 
+              {status === "error" && (
+                <p className="text-sm text-error">
+                  {errorMessage}
+                </p>
+              )}
+
+              <Button
+                type="submit"
+                variant="primary"
+                fullWidth
+                loading={status === "loading"}
+                loadingText="Resetting"
+              >
+                Reset Password
+              </Button>
+            </form>
+          </>
         )}
-
       </div>
-
     </main>
   );
 }
+

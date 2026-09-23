@@ -1,14 +1,14 @@
 "use client";
 
 import axios from "axios";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 type VerificationStatus = "loading" | "success" | "error";
 
 export default function VerifyEmailSent() {
-  const searchParam = useSearchParams();
+  const searchParams = useSearchParams();
 
   const [status, setStatus] =
     useState<VerificationStatus>("loading");
@@ -18,9 +18,11 @@ export default function VerifyEmailSent() {
   );
 
   useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+
     const verificationStatus = async () => {
       try {
-        const email = searchParam.get("email");
+        const email = searchParams.get("email");
 
         if (!email) {
           setStatus("error");
@@ -37,15 +39,18 @@ export default function VerifyEmailSent() {
 
         if (response.data.isVerified) {
           setStatus("success");
-          setMessage("Your email has been verified successfully!");
-          clearInterval(interval);
-        } else {
-          setStatus("error");
           setMessage(
-            "Your email is not verified yet. Please check your inbox and click the verification link."
+            "Your email has been verified successfully!"
           );
+
+          clearInterval(interval);
+          return;
         }
-        
+
+        setStatus("error");
+        setMessage(
+          "Your email is not verified yet. Please check your inbox and click the verification link."
+        );
       } catch (error: any) {
         setStatus("error");
         setMessage(
@@ -54,91 +59,108 @@ export default function VerifyEmailSent() {
         );
       }
     };
-verificationStatus();
-    const interval = setInterval(() => {
-  verificationStatus();
-}, 5000);
 
-return () => {
-  clearInterval(interval);
-};
+    verificationStatus();
 
-  
+    interval = setInterval(() => {
+      verificationStatus();
+    }, 5000);
 
-  }, [searchParam]);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [searchParams]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-3xl bg-black p-8 text-center shadow-2xl">
+    <main className="flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="w-full max-w-110">
 
-       
+        {/* Loading / Checking */}
         {status === "loading" && (
-          <>
-            <div className="mx-auto mb-5 h-10 w-10 animate-spin rounded-full border-4 border-gray-700 border-t-yellow-400" />
+          <div className="rounded-xl border border-border bg-surface p-8 text-center">
+            <div
+              className="mx-auto mb-5 h-10 w-10 animate-spin rounded-full border-4 border-border border-t-accent"
+              aria-hidden="true"
+            />
 
-            <h1 className="text-3xl font-bold text-white">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               Check Your Email
             </h1>
 
-            <p className="mt-3 text-gray-400">
-              We&apos;ve sent a verification link to your email.
+            <p className="mt-2 text-sm text-secondary">
+              We've sent a verification link to your email.
             </p>
 
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-3 text-sm text-muted">
               Checking your verification status...
             </p>
-          </>
+          </div>
         )}
 
+        {/* Success */}
         {status === "success" && (
-          <>
-            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-green-500/10">
-              <span className="text-3xl text-green-400">
-                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M530.8 134.1C545.1 144.5 548.3 164.5 537.9 178.8L281.9 530.8C276.4 538.4 267.9 543.1 258.5 543.9C249.1 544.7 240 541.2 233.4 534.6L105.4 406.6C92.9 394.1 92.9 373.8 105.4 361.3C117.9 348.8 138.2 348.8 150.7 361.3L252.2 462.8L486.2 141.1C496.6 126.8 516.6 123.6 530.9 134z"/></svg>
-              </span>
+          <div className="rounded-xl border border-border bg-surface p-8 text-center">
+            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-6 w-6"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m5 12 4 4L19 6"
+                />
+              </svg>
             </div>
 
-            <h1 className="text-3xl font-bold text-white">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               Email Verified!
             </h1>
 
-            <p className="mt-3 text-gray-400">
+            <p className="mt-2 text-sm leading-6 text-secondary">
               {message}
             </p>
 
             <Link
               href="/login"
-              className="mt-6 inline-block w-full rounded-lg bg-yellow-400 py-3 font-bold text-black transition hover:bg-yellow-500"
+              className="mt-6 block w-full rounded-lg bg-foreground px-5 py-3 text-sm font-medium text-white transition-colors duration-150 hover:bg-black/85"
             >
               Go to Login
             </Link>
-          </>
+          </div>
         )}
 
-    
+        {/* Error / Not Verified */}
         {status === "error" && (
-          <>
-            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-yellow-400/10">
-              <span className="text-2xl text-yellow-400">
+          <div className="rounded-xl border border-border bg-surface p-8 text-center">
+            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 text-warning">
+              <span
+                className="text-xl font-semibold"
+                aria-hidden="true"
+              >
                 !
               </span>
             </div>
 
-            <h1 className="text-3xl font-bold text-white">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               Check Your Email
             </h1>
 
-            <p className="mt-3 text-gray-400">
+            <p className="mt-2 text-sm leading-6 text-secondary">
               {message}
             </p>
 
-            <p className="mt-4 text-sm text-gray-500">
-              Didn&apos;t receive the email? Check your spam folder.
+            <p className="mt-4 text-sm text-muted">
+              Didn't receive the email? Check your spam folder.
             </p>
-          </>
+          </div>
         )}
-
       </div>
-    </div>
+    </main>
   );
 }

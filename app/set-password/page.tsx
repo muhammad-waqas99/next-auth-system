@@ -1,145 +1,156 @@
+
 "use client";
 
-import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 import { setPasswordSchema } from "@/app/lib/validationSchema/auth.schema";
-import toast from "react-hot-toast";
-import { validateForm } from "../lib/validationSchema/validateForm";
+import { validateForm } from "@/app/lib/validationSchema/validateForm";
+import { axiosInstance } from "@/app/lib/axios/axiosInstance";
+
+import Input from "@/app/components/ui/Input/Input";
+import FormField from "@/app/components/ui/FormField/FormField";
+import Button from "@/app/components/ui/Button/Button";
 
 export default function ChangePassword() {
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const router = useRouter();
+
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isSettingPassword, setIsSettingPassword] = useState(false);
+
   const [formDetails, setFormDetails] = useState({
     confirmPassword: "",
     newPassword: "",
   });
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormDetails({ ...formDetails, [e.target.name]: e.target.value });
+    setFormDetails({
+      ...formDetails,
+      [e.target.name]: e.target.value,
+    });
   };
 
-  const onSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
+  const onSubmit = async (
+    e: React.SubmitEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
 
+    if (isSettingPassword) return;
+
+    setFormErrors({});
+
+    const result = validateForm(
+      setPasswordSchema,
+      formDetails
+    );
+
+    if (!result.success) {
+      setFormErrors(result.errors);
+      return;
+    }
+
     try {
+      setIsSettingPassword(true);
 
-  
-setFormErrors({});
-
-const result = validateForm(setPasswordSchema, formDetails);
-
-if (!result.success) {
-  setFormErrors(result.errors);
-  return;
-}
-
-        
- const response =await axios.post(
+      const response = await axiosInstance.post(
         "/api/auth/set-password",
-        result.data,
+        result.data
       );
- toast.success(response.data.message);
+
+      toast.success(response.data.message);
+
       router.push("/profile");
-    }  catch (error:any) {
-    console.log("Something went wrong");
-    toast.error(
-  error.response?.data?.message ||
-    "Something went wrong"
-);
-  }
+    } catch (error: any) {
+      console.log(
+        "Something went wrong",
+        error.message
+      );
+
+      toast.error(
+        error.response?.data?.message ||
+          "Something went wrong"
+      );
+    } finally {
+      setIsSettingPassword(false);
+    }
   };
 
   return (
-    <>
-      <main className="min-h-screen bg-black px-4 py-8">
-        
+    <main className="flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="w-full max-w-110">
 
-        <div className="max-w-md mx-auto mb-5">
-          
-          <button
-            type="button"
-            onClick={() => router.push("/profile")}
-            className="text-sm text-zinc-400 hover:text-white transition"
-          >
-            
-            ← Go Back
-          </button>
-        </div>
-    
-        <form
-          onSubmit={onSubmit}
-          className="w-full max-w-md mx-auto p-8 rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl"
+        <button
+          type="button"
+          onClick={() => router.push("/profile")}
+          disabled={isSettingPassword}
+          className="mb-6 text-sm text-secondary transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
         >
-          
-          <h1 className="text-2xl font-semibold text-white mb-2">
-            
+          ← Go Back
+        </button>
+
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
             Set Password
           </h1>
-          <p className="text-sm text-zinc-400 mb-7">
-            
+
+          <p className="mt-2 text-sm text-secondary">
             Set your password to keep your account secure.
           </p>
-  
+        </div>
 
-
-          <div className="mb-5">
-            
-            <label
-              htmlFor="newPassword"
-              className="block text-sm font-medium text-zinc-300 mb-2"
-            >
-              
-              New Password
-            </label>
-            <input
-              onChange={onChange}
-              type="password"
-              name="newPassword"
-              placeholder="Enter your new password"
-              id="newPassword"
-              className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-500 outline-none transition focus:border-white focus:ring-1 focus:ring-white"
-            />
-                                         {formErrors.newPassword && (
-    <p className="mt-1 text-sm text-red-400">
-      {formErrors.newPassword}
-    </p>
-  )}
-          </div>
-          
-          <div className="mb-7">
-            
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium text-zinc-300 mb-2"
-            >
-              
-              Confirm New Password
-            </label>
-            <input
-              onChange={onChange}
-              type="password"
-              name="confirmPassword"
-              placeholder="Confirm your new password"
-              id="confirmPassword"
-              className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-500 outline-none transition focus:border-white focus:ring-1 focus:ring-white"
-            />
-                                         {formErrors.confirmPassword && (
-    <p className="mt-1 text-sm text-red-400">
-      {formErrors.confirmPassword}
-    </p>
-  )}
-          </div>
-          <button
-            type="submit"
-            className="w-full py-3 rounded-lg bg-white text-black font-medium hover:bg-zinc-200 transition"
+        <form
+          onSubmit={onSubmit}
+          className="flex flex-col gap-5"
+        >
+          <FormField
+            label="New Password"
+            id="newPassword"
+            error={formErrors.newPassword}
           >
-            
+            <Input
+              id="newPassword"
+              name="newPassword"
+              type="password"
+              autoComplete="new-password"
+              placeholder="Enter your new password"
+              value={formDetails.newPassword}
+              onChange={onChange}
+              error={!!formErrors.newPassword}
+              disabled={isSettingPassword}
+            />
+          </FormField>
+
+          <FormField
+            label="Confirm New Password"
+            id="confirmPassword"
+            error={formErrors.confirmPassword}
+          >
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              placeholder="Confirm your new password"
+              value={formDetails.confirmPassword}
+              onChange={onChange}
+              error={!!formErrors.confirmPassword}
+              disabled={isSettingPassword}
+            />
+          </FormField>
+
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth
+            loading={isSettingPassword}
+            loadingText="Setting Password"
+          >
             Set Password
-          </button>
+          </Button>
         </form>
-      </main>
-    </>
+      </div>
+    </main>
   );
 }
+
