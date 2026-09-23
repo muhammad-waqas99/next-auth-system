@@ -167,11 +167,20 @@ export const setupTwoFactorSchema = z.object({
   password: passwordInputSchema,
 });
 
-export const verifyDisableSchema = z.object({
-  challenge: challengeSchema,
-  otp: otpSchema,
-  backupCode: backupCodeSchema,
-});
+export const verifyDisableSchema = z
+  .object({
+    challenge: challengeSchema,
+    otp: otpSchema.optional(),
+    backupCode: backupCodeSchema.optional(),
+  })
+  .refine((data) => !!data.otp || !!data.backupCode, {
+    message: "OTP or backup code is required",
+    path: ["otp"],
+  })
+  .refine((data) => !(data.otp && data.backupCode), {
+    message: "Use either OTP or backup code, not both",
+    path: ["otp"],
+  });
 
 export const verifyOtpSchema  = z.object({
   challenge: challengeSchema,

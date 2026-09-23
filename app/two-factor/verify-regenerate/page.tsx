@@ -1,11 +1,16 @@
 "use client";
 
-import {  verifyOtpSchema } from "@/app/lib/validationSchema/auth.schema";
-import { validateForm } from "@/app/lib/validationSchema/validateForm";
-import axios from "axios";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
+
+import Input from "@/app/components/ui/Input/Input";
+import FormField from "@/app/components/ui/FormField/FormField";
+import Button from "@/app/components/ui/Button/Button";
+
+import { verifyOtpSchema } from "@/app/lib/validationSchema/auth.schema";
+import { validateForm } from "@/app/lib/validationSchema/validateForm";
+import { axiosInstance } from "@/app/lib/axios/axiosInstance";
 
 export default function VerifyRegenerateBackupCodesPage() {
   const router = useRouter();
@@ -24,9 +29,11 @@ export default function VerifyRegenerateBackupCodesPage() {
       return;
     }
 
+    if (isVerifying) return;
+
     setFormErrors({});
 
-    const result = validateForm(verifyOtpSchema , {
+    const result = validateForm(verifyOtpSchema, {
       challenge,
       otp,
     });
@@ -39,12 +46,9 @@ export default function VerifyRegenerateBackupCodesPage() {
     try {
       setIsVerifying(true);
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         "/api/auth/2fa/verify-regenerate",
-        {
-          challenge,
-          otp,
-        }
+        result.data
       );
 
       if (response.data.success) {
@@ -83,84 +87,86 @@ export default function VerifyRegenerateBackupCodesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#111111] text-white flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#181818] p-8">
+    <main className="flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="w-full max-w-110">
         {!backupCodes.length ? (
           <>
-            <h1 className="text-2xl font-bold text-center">
-              Verify Authenticator Code
-            </h1>
+            <div className="mb-8 text-center">
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                Verify authenticator code
+              </h1>
 
-            <p className="mt-3 text-center text-sm text-zinc-400">
-              Enter the 6-digit code from your authenticator app to regenerate
-              your backup codes.
-            </p>
-
-            <div className="mt-6">
-              <label
-                htmlFor="otp"
-                className="block text-sm text-zinc-300 mb-2"
-              >
-                Authentication Code
-              </label>
-
-              <input
-                type="text"
-                id="otp"
-                name="otp"
-                value={otp}
-                maxLength={6}
-                inputMode="numeric"
-                placeholder="Enter 6-digit code"
-                onChange={(e) =>
-                  setOtp(e.target.value.replace(/\D/g, ""))
-                }
-                className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white outline-none focus:border-white tracking-widest text-center"
-                disabled={isVerifying}
-              />
-
-              {formErrors.otp && (
-                <p className="mt-1 text-sm text-red-400">
-                  {formErrors.otp}
-                </p>
-              )}
-
-              <button
-                type="button"
-                onClick={verifyOtp}
-                disabled={isVerifying}
-                className="mt-5 w-full rounded-lg bg-green-500 px-4 py-3 font-semibold transition hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isVerifying ? "Verifying..." : "Verify & Regenerate"}
-              </button>
+              <p className="mt-2 text-sm text-secondary">
+                Enter the 6-digit code from your authenticator app
+                to regenerate your backup codes
+              </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => router.push("/profile")}
-              disabled={isVerifying}
-              className="mt-4 w-full rounded-lg border border-zinc-700 px-4 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800 disabled:opacity-50"
-            >
-              Cancel
-            </button>
+            <div className="flex flex-col gap-5">
+              <FormField
+                label="Authentication code"
+                id="otp"
+                error={formErrors.otp}
+              >
+                <Input
+                  id="otp"
+                  name="otp"
+                  type="text"
+                  value={otp}
+                  maxLength={6}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="Enter 6-digit code"
+                  onChange={(e) =>
+                    setOtp(e.target.value.replace(/\D/g, ""))
+                  }
+                  error={!!formErrors.otp}
+                  disabled={isVerifying}
+                  className="text-center tracking-widest"
+                />
+              </FormField>
+
+              <Button
+                type="button"
+                variant="primary"
+                fullWidth
+                loading={isVerifying}
+                loadingText="Verifying"
+                onClick={verifyOtp}
+              >
+                Verify & Regenerate
+              </Button>
+
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                onClick={() => router.push("/profile")}
+                disabled={isVerifying}
+              >
+                Cancel
+              </Button>
+            </div>
           </>
         ) : (
           <>
-            <h1 className="text-2xl font-bold text-center">
-              Backup Codes Regenerated
-            </h1>
+            <div className="mb-8 text-center">
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                Backup codes regenerated
+              </h1>
 
-            <p className="mt-3 text-center text-sm text-zinc-400">
-              Your old backup codes are no longer valid. Save these new codes
-              somewhere safe.
-            </p>
+              <p className="mt-2 text-sm text-secondary">
+                Your old backup codes are no longer valid. Save
+                these new codes somewhere safe.
+              </p>
+            </div>
 
-            <div className="mt-6 rounded-xl border border-zinc-700 bg-zinc-900 p-5">
+            <div className="rounded-lg border border-border bg-surface p-5">
               <div className="grid grid-cols-2 gap-3">
                 {backupCodes.map((code) => (
                   <div
                     key={code}
-                    className="rounded-lg bg-zinc-800 px-3 py-3 text-center font-mono tracking-wider"
+                    className="rounded-lg border border-border bg-background px-3 py-3 text-center font-mono text-sm tracking-wider"
                   >
                     {code}
                   </div>
@@ -168,33 +174,38 @@ export default function VerifyRegenerateBackupCodesPage() {
               </div>
             </div>
 
-            <div className="mt-5 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-300">
-              <p className="font-semibold">Important</p>
+            <div className="mt-5 rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm">
+              <p className="font-semibold text-warning">Important</p>
 
-              <p className="mt-1">
-                These backup codes will only be shown now. Save or download
-                them before leaving this page.
+              <p className="mt-1 text-secondary">
+                These backup codes will only be shown now. Save or
+                download them before leaving this page.
               </p>
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="accent"
+              fullWidth
               onClick={downloadBackupCodes}
-              className="mt-5 w-full rounded-lg bg-blue-500 px-4 py-3 font-semibold transition hover:bg-blue-600"
+              className="mt-5"
             >
               Download Backup Codes
-            </button>
+            </Button>
 
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              fullWidth
               onClick={() => router.push("/profile")}
-              className="mt-3 w-full rounded-lg border border-zinc-700 px-4 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800"
+              className="mt-3"
             >
               Continue to Profile
-            </button>
+            </Button>
           </>
         )}
       </div>
     </main>
   );
 }
+

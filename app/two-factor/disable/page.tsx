@@ -1,34 +1,44 @@
+
 "use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+
+import Input from "@/app/components/ui/Input/Input";
+import FormField from "@/app/components/ui/FormField/FormField";
+import Button from "@/app/components/ui/Button/Button";
 
 import { disableTwoFactorSchema } from "@/app/lib/validationSchema/auth.schema";
 import { validateForm } from "@/app/lib/validationSchema/validateForm";
-import axios from "axios";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import toast from "react-hot-toast";
+import { axiosInstance } from "@/app/lib/axios/axiosInstance";
 
 export default function DisableTwoFactorPage() {
   const router = useRouter();
-    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleDisableSetup = async () => {
-setFormErrors({});
+    if (isLoading) return;
 
-const result = validateForm(disableTwoFactorSchema, password);
+    setFormErrors({});
 
-if (!result.success) {
-  setFormErrors(result.errors);
-  return;
-}
+    const result = validateForm(disableTwoFactorSchema, {password});
 
+    if (!result.success) {
+      setFormErrors(result.errors);
+      return;
+    }
 
     try {
       setIsLoading(true);
 
-      const response = await axios.post("/api/auth/2fa/disable", result.data);
+      const response = await axiosInstance.post(
+        "/api/auth/2fa/disable",
+        result.data
+      );
 
       if (response.data.success) {
         toast.success("Password verified");
@@ -50,37 +60,49 @@ if (!result.success) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-2">
-          Disable Two-Factor Authentication
-        </h1>
+    <main className="flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="w-full max-w-110">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            Disable two-factor authentication
+          </h1>
 
-        <p className="text-gray-500 mb-6">
-          Enter your current password to continue.
-        </p>
+          <p className="mt-2 text-sm text-secondary">
+            Enter your current password to continue
+          </p>
+        </div>
 
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Enter your password"
-          className="w-full border rounded-lg px-4 py-3 mb-4"
-          disabled={isLoading}
-        />
-                    {formErrors.password && (
-    <p className="mt-1 text-sm text-red-400">
-      {formErrors.password}
-    </p>
-  )}
-        <button
-          onClick={handleDisableSetup}
-          disabled={isLoading}
-          className="w-full bg-black text-white rounded-lg py-3 disabled:opacity-50"
-        >
-          {isLoading ? "Verifying..." : "Continue"}
-        </button>
+        <div className="flex flex-col gap-5">
+          <FormField
+            label="Current password"
+            id="password"
+            error={formErrors.password}
+          >
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              error={!!formErrors.password}
+              disabled={isLoading}
+              autoComplete="current-password"
+            />
+          </FormField>
+
+          <Button
+            type="button"
+            variant="primary"
+            fullWidth
+            loading={isLoading}
+            loadingText="Verifying"
+            onClick={handleDisableSetup}
+          >
+            Continue
+          </Button>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }

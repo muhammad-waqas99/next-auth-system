@@ -1,41 +1,48 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import toast from "react-hot-toast";
+
+import Input from "@/app/components/ui/Input/Input";
+import FormField from "@/app/components/ui/FormField/FormField";
+import Button from "@/app/components/ui/Button/Button";
+
 import { backupLoginSchema } from "@/app/lib/validationSchema/auth.schema";
 import { validateForm } from "@/app/lib/validationSchema/validateForm";
-import axios from "axios";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
-import toast from "react-hot-toast";
+import { axiosInstance } from "@/app/lib/axios/axiosInstance";
 
 export default function BackupDisableTwoFactorPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const challenge = searchParams.get("challenge");
-    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [backupCode, setBackupCode] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
 
   const verifyDisable = async () => {
-setFormErrors({});
+    if (isVerifying) return;
 
-const result = validateForm(backupLoginSchema, {
-  challenge,
-  backupCode,
-});
+    setFormErrors({});
 
-if (!result.success) {
-  setFormErrors(result.errors);
-  return;
-}
-    
+    const result = validateForm(backupLoginSchema, {
+      challenge,
+      backupCode,
+    });
+
+    if (!result.success) {
+      setFormErrors(result.errors);
+      return;
+    }
 
     try {
       setIsVerifying(true);
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         "/api/auth/2fa/verify-disable",
-  result.data
+        result.data
       );
 
       if (response.data.success) {
@@ -52,52 +59,78 @@ if (!result.success) {
     }
   };
 
+  const useAuthenticatorCode = () => {
+    if (!challenge) {
+      toast.error("Invalid login challenge");
+      return;
+    }
+
+    router.push(
+      `/two-factor/verify-disable?challenge=${challenge}`
+    );
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-2">
-          Disable Two-Factor Authentication
-        </h1>
+    <main className="flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="w-full max-w-110">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            Disable two-factor authentication
+          </h1>
 
-        <p className="text-gray-500 mb-6">
-          Enter one of your backup codes to disable
-          two-factor authentication.
+          <p className="mt-2 text-sm text-secondary">
+            Enter one of your backup codes to disable
+            two-factor authentication
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-5">
+          <FormField
+            label="Backup code"
+            id="backupCode"
+            error={formErrors.backupCode}
+          >
+            <Input
+              id="backupCode"
+              name="backupCode"
+              type="text"
+              inputMode="numeric"
+              placeholder="Enter backup code"
+              value={backupCode}
+              onChange={(e) => setBackupCode(e.target.value)}
+              error={!!formErrors.backupCode}
+              disabled={isVerifying}
+            />
+          </FormField>
+
+          <Button
+            type="button"
+            variant="primary"
+            fullWidth
+            loading={isVerifying}
+            loadingText="Disabling"
+            onClick={verifyDisable}
+          >
+            Disable 2FA
+          </Button>
+
+          <Button
+            type="button"
+            variant="secondary"
+            fullWidth
+            onClick={useAuthenticatorCode}
+            disabled={isVerifying}
+          >
+            Use Authenticator Code
+          </Button>
+        </div>
+
+        <p className="mt-6 text-center text-sm text-secondary">
+          Use your authenticator app instead if you have access
+          to it.
         </p>
-
-        <input
-          type="text"
-          inputMode="numeric"
-          value={backupCode}
-          onChange={(e) => setBackupCode(e.target.value)}
-          placeholder="Enter backup code"
-          className="w-full border rounded-lg px-4 py-3 mb-4"
-          disabled={isVerifying}
-        />
-{formErrors.backupCode && (
-  <p className="mt-1 text-sm text-red-400">
-    {formErrors.backupCode}
-  </p>
-)}
-        <button
-          onClick={verifyDisable}
-          disabled={isVerifying}
-          className="w-full bg-black text-white rounded-lg py-3 disabled:opacity-50"
-        >
-          {isVerifying ? "Verifying..." : "Disable 2FA"}
-        </button>
-
-        <button
-          onClick={() =>
-            router.push(
-              `/two-factor/verify-disable?challenge=${challenge}`
-            )
-          }
-          disabled={isVerifying}
-          className="w-full border rounded-lg py-3 mt-3 disabled:opacity-50"
-        >
-          Use Authenticator Code
-        </button>
       </div>
-    </div>
+    </main>
   );
 }
+

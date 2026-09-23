@@ -1,34 +1,47 @@
+
 "use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+
+import Input from "@/app/components/ui/Input/Input";
+import FormField from "@/app/components/ui/FormField/FormField";
+import Button from "@/app/components/ui/Button/Button";
 
 import { disableTwoFactorSchema } from "@/app/lib/validationSchema/auth.schema";
 import { validateForm } from "@/app/lib/validationSchema/validateForm";
-import axios from "axios";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import toast from "react-hot-toast";
+import { axiosInstance } from "@/app/lib/axios/axiosInstance";
 
 export default function RegenerateBackupCodesPage() {
   const router = useRouter();
-    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [password, setPassword] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const verifyPassword = async () => {
+  const verifyPassword = async (
+    e: React.SubmitEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
 
+    if (isVerifying) return;
 
-setFormErrors({});
+    setFormErrors({});
 
-const result = validateForm(disableTwoFactorSchema, password);
+    const result = validateForm(disableTwoFactorSchema, {
+      password,
+    });
 
-if (!result.success) {
-  setFormErrors(result.errors);
-  return;
-}  
+    if (!result.success) {
+      setFormErrors(result.errors);
+      return;
+    }
+
     try {
       setIsVerifying(true);
 
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         "/api/auth/2fa/regenerate-password",
         result.data
       );
@@ -53,61 +66,63 @@ if (!result.success) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-          <h1 className="text-2xl font-semibold text-white">
-            Regenerate Backup Codes
+    <main className="flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="w-full max-w-110">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            Regenerate backup codes
           </h1>
 
-          <p className="text-sm text-zinc-400 mt-2">
-            Enter your password to continue. You will be asked for your
-            authenticator code on the next step.
+          <p className="mt-2 text-sm text-secondary">
+            Enter your password to continue. You will be asked for
+            your authenticator code on the next step.
           </p>
+        </div>
 
-          <div className="mt-6">
-            <label
-              htmlFor="password"
-              className="block text-sm text-zinc-300 mb-2"
-            >
-              Password
-            </label>
-
-            <input
+        <form
+          onSubmit={verifyPassword}
+          className="flex flex-col gap-5"
+        >
+          <FormField
+            label="Password"
+            id="password"
+            error={formErrors.password}
+          >
+            <Input
               id="password"
+              name="password"
               type="password"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white outline-none focus:border-zinc-500"
+              error={!!formErrors.password}
               disabled={isVerifying}
+              autoComplete="current-password"
             />
-                                {formErrors.password && (
-    <p className="mt-1 text-sm text-red-400">
-      {formErrors.password}
-    </p>
-  )}
-          </div>
+          </FormField>
 
-          <button
-            type="button"
-            onClick={verifyPassword}
-            disabled={isVerifying}
-            className="w-full mt-5 rounded-lg bg-white text-black py-3 font-medium disabled:opacity-50"
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth
+            loading={isVerifying}
+            loadingText="Verifying"
           >
-            {isVerifying ? "Verifying..." : "Continue"}
-          </button>
+            Continue
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            fullWidth
             onClick={() => router.push("/profile")}
             disabled={isVerifying}
-            className="w-full mt-3 rounded-lg border border-zinc-700 text-zinc-300 py-3 disabled:opacity-50"
           >
             Cancel
-          </button>
-        </div>
+          </Button>
+        </form>
       </div>
-    </div>
+    </main>
   );
 }
+

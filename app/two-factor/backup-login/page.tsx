@@ -2,40 +2,50 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import axios from "axios";
-import { toast } from "react-hot-toast";
+import toast from "react-hot-toast";
+
+import Input from "@/app/components/ui/Input/Input";
+import FormField from "@/app/components/ui/FormField/FormField";
+import Button from "@/app/components/ui/Button/Button";
+
 import { validateForm } from "@/app/lib/validationSchema/validateForm";
 import { backupLoginSchema } from "@/app/lib/validationSchema/auth.schema";
+import { axiosInstance } from "@/app/lib/axios/axiosInstance";
 
 export default function BackupLoginPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const challenge = searchParams.get("challenge");
-    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [backupCode, setBackupCode] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-setFormErrors({});
+    if (loading) return;
 
-const result = validateForm(backupLoginSchema, {
-  challenge,
-  backupCode,
-});
+    setFormErrors({});
 
-if (!result.success) {
-  setFormErrors(result.errors);
-  return;
-}
+    const result = validateForm(backupLoginSchema, {
+      challenge,
+      backupCode,
+    });
+
+    if (!result.success) {
+      setFormErrors(result.errors);
+      return;
+    }
 
     try {
       setLoading(true);
 
-      const response = await axios.post("/api/auth/2fa/backup-login", result.data);
+      const response = await axiosInstance.post(
+        "/api/auth/2fa/backup-login",
+        result.data
+      );
 
       if (response.data.success) {
         toast.success("Logged in successfully");
@@ -50,59 +60,65 @@ if (!result.success) {
     }
   };
 
+  const useAuthenticatorCode = () => {
+    router.push(`/two-factor/login?challenge=${challenge}`);
+  };
+
   return (
-  
-    <div className="flex min-h-screen items-center justify-center bg-[#111] px-4">
-      <div className="w-full max-w-md rounded-xl border border-gray-800 bg-[#181818] p-6">
-        <h1 className="text-2xl font-bold text-white">
-          Use Backup Code
-        </h1>
+    <main className="flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="w-full max-w-110">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            Use backup code
+          </h1>
 
-        <p className="mt-2 text-sm text-gray-400">
-          Enter one of your unused backup codes to continue logging in.
-        </p>
+          <p className="mt-2 text-sm text-secondary">
+            Enter one of your unused backup codes to continue
+            logging in
+          </p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="mt-6">
-          <label
-            htmlFor="backupCode"
-            className="mb-2 block text-sm font-medium text-gray-300"
-          >
-            Backup Code
-          </label>
-
-          <input
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <FormField
+            label="Backup code"
             id="backupCode"
-            type="text"
-            value={backupCode}
-            onChange={(e) => setBackupCode(e.target.value)}
-            placeholder="Enter backup code"
-            className="w-full rounded-lg border border-gray-700 bg-[#111] px-4 py-3 text-white outline-none focus:border-blue-500"
-          />
-       {formErrors.backupCode && (
-  <p className="mt-1 text-sm text-red-400">
-    {formErrors.backupCode}
-  </p>
-)}
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-4 w-full rounded-lg bg-blue-500 px-4 py-3 font-semibold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+            error={formErrors.backupCode}
           >
-            {loading ? "Verifying..." : "Verify Backup Code"}
-          </button>
+            <Input
+              id="backupCode"
+              name="backupCode"
+              type="text"
+              inputMode="numeric"
+              placeholder="Enter backup code"
+              value={backupCode}
+              onChange={(e) => setBackupCode(e.target.value)}
+              error={!!formErrors.backupCode}
+              disabled={loading}
+            />
+          </FormField>
+
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth
+            loading={loading}
+            loadingText="Verifying"
+          >
+            Verify Backup Code
+          </Button>
         </form>
 
-        <button
+        <Button
           type="button"
-          onClick={() =>
-            router.push(`/two-factor/login?challenge=${challenge}`)
-          }
-          className="mt-4 w-full text-sm text-gray-400 transition hover:text-white"
+          variant="secondary"
+          fullWidth
+          onClick={useAuthenticatorCode}
+          disabled={loading}
+          className="mt-5"
         >
           Use Authenticator Code
-        </button>
+        </Button>
       </div>
-    </div>
-
+    </main>
   );
 }
