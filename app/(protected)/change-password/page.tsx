@@ -4,13 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-import { changePasswordSchema } from "../lib/validationSchema/auth.schema";
-import { validateForm } from "../lib/validationSchema/validateForm";
-import { axiosInstance } from "../lib/axios/axiosInstance";
+import { changePasswordSchema } from "../../lib/validationSchema/auth.schema";
+import { validateForm } from "../../lib/validationSchema/validateForm";
+import { axiosInstance } from "../../lib/axios/axiosInstance";
 
-import Input from "../components/ui/Input/Input";
-import FormField from "../components/ui/FormField/FormField";
-import Button from "../components/ui/Button/Button";
+import Input from "../../components/ui/Input/Input";
+import FormField from "../../components/ui/FormField/FormField";
+import Button from "../../components/ui/Button/Button";
 
 export default function ChangePassword() {
   const router = useRouter();

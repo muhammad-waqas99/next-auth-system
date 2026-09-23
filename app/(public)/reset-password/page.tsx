@@ -7,12 +7,12 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-import { resetPasswordSchema } from "../lib/validationSchema/auth.schema";
-import { validateForm } from "../lib/validationSchema/validateForm";
+import { resetPasswordSchema } from "../../lib/validationSchema/auth.schema";
+import { validateForm } from "../../lib/validationSchema/validateForm";
 
-import Input from "../components/ui/Input/Input";
-import FormField from "../components/ui/FormField/FormField";
-import Button from "../components/ui/Button/Button";
+import Input from "../../components/ui/Input/Input";
+import FormField from "../../components/ui/FormField/FormField";
+import Button from "../../components/ui/Button/Button";
 
 type ResetStatus =
   | "idle"

@@ -4,13 +4,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { forgotPasswordSchema } from "../lib/validationSchema/auth.schema";
-import { validateForm } from "../lib/validationSchema/validateForm";
+import { forgotPasswordSchema } from "../../lib/validationSchema/auth.schema";
+import { validateForm } from "../../lib/validationSchema/validateForm";
 
 
-import Input from "../components/ui/Input/Input";
-import FormField from "../components/ui/FormField/FormField";
-import Button from "../components/ui/Button/Button";
+import Input from "../../components/ui/Input/Input";
+import FormField from "../../components/ui/FormField/FormField";
+import Button from "../../components/ui/Button/Button";
 import axios from "axios";
 
 type ResetStatus =

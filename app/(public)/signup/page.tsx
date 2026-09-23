@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-import Input from "../components/ui/Input/Input";
-import FormField from "../components/ui/FormField/FormField";
-import Button from "../components/ui/Button/Button";
+import Input from "../../components/ui/Input/Input";
+import FormField from "../../components/ui/FormField/FormField";
+import Button from "../../components/ui/Button/Button";
 
-import { signupSchema } from "../lib/validationSchema/auth.schema";
-import { validateForm } from "../lib/validationSchema/validateForm";
-import { axiosInstance } from "../lib/axios/axiosInstance";
+import { signupSchema } from "../../lib/validationSchema/auth.schema";
+import { validateForm } from "../../lib/validationSchema/validateForm";
+import { axiosInstance } from "../../lib/axios/axiosInstance";
 
 interface SignupForm {
   name: string;

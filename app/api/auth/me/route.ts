@@ -11,10 +11,6 @@ import {
 } from "@/app/lib/errors/messages";
 import { AppError } from "@/app/lib/errors/AppError";
 
-interface TokenPayload {
-  id: string;
-  type: string;
-}
 
 export async function GET(request: NextRequest) {
   try {
