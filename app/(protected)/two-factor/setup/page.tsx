@@ -139,6 +139,16 @@ export default function TwoFactorSetup() {
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">
       <div className="w-full max-w-110">
+        {!qrImg  && (
+                                  <button
+          type="button"
+          onClick={() => router.push("/profile")}
+          disabled={isSettingUp}
+          className="mb-6 text-sm text-secondary transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          ← Go Back
+        </button>
+        )}
         {!backupCodes.length ? (
           <>
             <div className="mb-8 text-center">

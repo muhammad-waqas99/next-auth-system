@@ -62,6 +62,14 @@ export default function DisableTwoFactorPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">
       <div className="w-full max-w-110">
+                <button
+          type="button"
+          onClick={() => router.push("/profile")}
+          disabled={isLoading}
+          className="mb-6 text-sm text-secondary transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          ← Go Back
+        </button>
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">
             Disable two-factor authentication

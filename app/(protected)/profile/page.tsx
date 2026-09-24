@@ -386,7 +386,7 @@ const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
               </div>
 
               <Button
-                variant="danger"
+                variant={user.twoFactorEnabled ? "danger" : "warning"}
                 onClick={() =>
                   router.push(
                     user.twoFactorEnabled
