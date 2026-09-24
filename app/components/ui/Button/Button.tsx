@@ -1,7 +1,13 @@
 
 import type { ButtonHTMLAttributes } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "accent";
+type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "accent"
+  | "danger"
+  | "success"
+  | "warning";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -32,6 +38,15 @@ const variants = {
 
   accent:
     "bg-accent text-white hover:opacity-90",
+
+  danger:
+    "bg-red-600 text-white hover:bg-red-700",
+
+  success:
+    "bg-green-600 text-white hover:bg-green-700",
+
+  warning:
+    "bg-yellow-500 text-black hover:bg-yellow-600",
 };
   return (
     <button

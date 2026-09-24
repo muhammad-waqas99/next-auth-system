@@ -22,10 +22,14 @@ import { useAuthStore } from "@/app/store/auth/authStore";
 import ProfileSkeleton from "./components/ProfileSkeleton";
 import ThemeSelector from "@/app/components/ui/ThemeSelector/ThemeSelector";
 import Button from "@/app/components/ui/Button/Button";
+import Modal from "@/app/components/ui/Modal/Modal";
 
 export default function Profile() {
   const router = useRouter();
-
+const [currentLogoutModal, setCurrentLogoutModal] = useState(false);
+const [sessionLogoutModal, setSessionLogoutModal] = useState(false);
+const [allLogoutModal, setAllLogoutModal] = useState(false);
+const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const user = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
   const backupCodesRemaining = useAuthStore(
@@ -344,7 +348,7 @@ export default function Profile() {
               </div>
 
               <Button
-                variant="secondary"
+                variant="accent"
                 onClick={() =>
                   router.push(
                     isGoogleOnly
@@ -382,7 +386,7 @@ export default function Profile() {
               </div>
 
               <Button
-                variant="secondary"
+                variant="danger"
                 onClick={() =>
                   router.push(
                     user.twoFactorEnabled
@@ -420,7 +424,7 @@ export default function Profile() {
                   </div>
 
                   <Button
-                    variant="secondary"
+                    variant="warning"
                     onClick={() =>
                       router.push(
                         "/two-factor/regenerate-password"
@@ -509,8 +513,8 @@ export default function Profile() {
 
           {isCurrent ? (
             <Button
-              variant="secondary"
-              onClick={onLogout}
+              variant="danger"
+             onClick={() => setCurrentLogoutModal(true)}
               className="w-full shrink-0 sm:w-auto"
             >
               <LogOut size={16} className="mr-2" />
@@ -518,10 +522,11 @@ export default function Profile() {
             </Button>
           ) : (
             <Button
-              variant="secondary"
-              onClick={() =>
-                onLogoutSession(session.sessionId)
-              }
+              variant="danger"
+onClick={() => {
+  setSelectedSessionId(session.sessionId);
+  setSessionLogoutModal(true);
+}}
               className="w-full shrink-0 sm:w-auto"
             >
               <LogOut size={16} className="mr-2" />
@@ -545,8 +550,8 @@ export default function Profile() {
   {sessions.length > 1 && (
     <div className="mt-4 flex justify-end">
       <Button
-        variant="secondary"
-        onClick={onLogoutAll}
+        variant="danger"
+        onClick={() => setAllLogoutModal(true)}
       >
         <LogOut size={16} className="mr-2" />
         Log out all sessions
@@ -555,7 +560,92 @@ export default function Profile() {
   )}
 </section>
 
+<Modal
+  open={currentLogoutModal}
+  onClose={() => setCurrentLogoutModal(false)}
+  title="Log out"
+  description="Are you sure you want to log out of your current session?"
+>
+  <div className="flex justify-end gap-3">
+    <Button
+      variant="secondary"
+      onClick={() => setCurrentLogoutModal(false)}
+    >
+      Cancel
+    </Button>
 
+    <Button
+      variant="danger"
+      onClick={() => {
+        setCurrentLogoutModal(false);
+        onLogout();
+      }}
+    >
+      Log out
+    </Button>
+  </div>
+</Modal>
+
+<Modal
+  open={sessionLogoutModal}
+  onClose={() => {
+    setSessionLogoutModal(false);
+    setSelectedSessionId(null);
+  }}
+  title="Log out device"
+  description="Are you sure you want to log out this device?"
+>
+  <div className="flex justify-end gap-3">
+    <Button
+      variant="secondary"
+      onClick={() => {
+        setSessionLogoutModal(false);
+        setSelectedSessionId(null);
+      }}
+    >
+      Cancel
+    </Button>
+
+    <Button
+      variant="danger"
+      onClick={() => {
+        if (!selectedSessionId) return;
+
+        setSessionLogoutModal(false);
+        onLogoutSession(selectedSessionId);
+        setSelectedSessionId(null);
+      }}
+    >
+      Log out
+    </Button>
+  </div>
+</Modal>
+
+<Modal
+  open={allLogoutModal}
+  onClose={() => setAllLogoutModal(false)}
+  title="Log out all sessions"
+  description="Are you sure you want to log out of all other active sessions?"
+>
+  <div className="flex justify-end gap-3">
+    <Button
+      variant="secondary"
+      onClick={() => setAllLogoutModal(false)}
+    >
+      Cancel
+    </Button>
+
+    <Button
+      variant="danger"
+      onClick={() => {
+        setAllLogoutModal(false);
+        onLogoutAll();
+      }}
+    >
+      Log out all
+    </Button>
+  </div>
+</Modal>
 
       </div>
     </main>
