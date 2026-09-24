@@ -12,8 +12,10 @@ import Button from "@/app/components/ui/Button/Button";
 import { verifyOtpSchema } from "@/app/lib/validationSchema/auth.schema";
 import { validateForm } from "@/app/lib/validationSchema/validateForm";
 import { axiosInstance } from "@/app/lib/axios/axiosInstance";
+import { useAuthStore } from "@/app/store/auth/authStore";
 
 export default function VerifyDisableTwoFactorPage() {
+    const fetchUser = useAuthStore((state)=> state.fetchUser)
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -54,6 +56,7 @@ export default function VerifyDisableTwoFactorPage() {
 
       if (response.data.success) {
         toast.success("2FA disabled successfully");
+         await fetchUser()
         router.push("/profile");
       }
     } catch (error: any) {

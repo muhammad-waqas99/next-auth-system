@@ -50,7 +50,7 @@ const ThemeSelector = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-12 z-50 w-36 rounded-lg border border-border bg-surface p-1 shadow-sm">
+        <div className="absolute right-[110]  top-12 z-50 w-36 rounded-lg border border-border bg-surface p-1 shadow-sm">
           {themes.map((item) => (
             <button
               key={item.value}

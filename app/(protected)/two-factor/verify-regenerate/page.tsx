@@ -11,13 +11,14 @@ import Button from "@/app/components/ui/Button/Button";
 import { verifyOtpSchema } from "@/app/lib/validationSchema/auth.schema";
 import { validateForm } from "@/app/lib/validationSchema/validateForm";
 import { axiosInstance } from "@/app/lib/axios/axiosInstance";
+import { useAuthStore } from "@/app/store/auth/authStore";
 
 export default function VerifyRegenerateBackupCodesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const challenge = searchParams.get("challenge");
-
+  const fetchUser = useAuthStore((state)=> state.fetchUser)
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [otp, setOtp] = useState("");
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
@@ -53,8 +54,9 @@ export default function VerifyRegenerateBackupCodesPage() {
 
       if (response.data.success) {
         setBackupCodes(response.data.backupCodes || []);
-
+            
         toast.success("Backup codes regenerated successfully");
+        await fetchUser()
       }
     } catch (error: any) {
       toast.error(

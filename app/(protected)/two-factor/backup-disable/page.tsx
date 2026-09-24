@@ -11,11 +11,12 @@ import Button from "@/app/components/ui/Button/Button";
 import { backupLoginSchema } from "@/app/lib/validationSchema/auth.schema";
 import { validateForm } from "@/app/lib/validationSchema/validateForm";
 import { axiosInstance } from "@/app/lib/axios/axiosInstance";
+import { useAuthStore } from "@/app/store/auth/authStore";
 
 export default function BackupDisableTwoFactorPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
+  const fetchUser = useAuthStore((state)=> state.fetchUser)
   const challenge = searchParams.get("challenge");
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -47,6 +48,7 @@ export default function BackupDisableTwoFactorPage() {
 
       if (response.data.success) {
         toast.success("2FA disabled successfully");
+        await fetchUser()
         router.push("/profile");
       }
     } catch (error: any) {

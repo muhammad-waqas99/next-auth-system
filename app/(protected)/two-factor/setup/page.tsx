@@ -15,8 +15,10 @@ import {
 } from "@/app/lib/validationSchema/auth.schema";
 import { validateForm } from "@/app/lib/validationSchema/validateForm";
 import { axiosInstance } from "@/app/lib/axios/axiosInstance";
+import { useAuthStore } from "@/app/store/auth/authStore";
 
 export default function TwoFactorSetup() {
+  const fetchUser = useAuthStore((state)=> state.fetchUser)
   const router = useRouter();
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -101,8 +103,9 @@ export default function TwoFactorSetup() {
 
       if (response.data.success) {
         setBackupCodes(response.data.backupCodes || []);
-
+         await fetchUser()
         toast.success("2FA enabled successfully");
+    
       }
     } catch (error: any) {
       toast.error(
@@ -139,16 +142,6 @@ export default function TwoFactorSetup() {
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">
       <div className="w-full max-w-110">
-        {!qrImg  && (
-                                  <button
-          type="button"
-          onClick={() => router.push("/profile")}
-          disabled={isSettingUp}
-          className="mb-6 text-sm text-secondary transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          ← Go Back
-        </button>
-        )}
         {!backupCodes.length ? (
           <>
             <div className="mb-8 text-center">
