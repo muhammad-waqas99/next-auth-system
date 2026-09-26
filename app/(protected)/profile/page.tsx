@@ -23,6 +23,7 @@ import ProfileSkeleton from "./components/ProfileSkeleton";
 import ThemeSelector from "@/app/components/ui/ThemeSelector/ThemeSelector";
 import Button from "@/app/components/ui/Button/Button";
 import Modal from "@/app/components/ui/Modal/Modal";
+import toast from "react-hot-toast";
 
 export default function Profile() {
   const router = useRouter();
@@ -366,41 +367,48 @@ const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
             <div className="border-t border-border" />
 
             {/* Two Factor */}
-            <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-4">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border">
-                  <ShieldCheck size={17} />
-                </div>
+<div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+  <div className="flex items-start gap-4">
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border">
+      <ShieldCheck size={17} />
+    </div>
 
-                <div>
-                  <h3 className="text-base font-medium">
-                    Two-factor authentication
-                  </h3>
+    <div>
+      <h3 className="text-base font-medium">
+        Two-factor authentication
+      </h3>
 
-                  <p className="mt-1 text-sm text-secondary">
-                    {user.twoFactorEnabled
-                      ? "Your account is protected with two-factor authentication."
-                      : "Add an extra layer of security to your account."}
-                  </p>
-                </div>
-              </div>
+      <p className="mt-1 text-sm text-secondary">
+        {user.twoFactorEnabled
+          ? "Your account is protected with two-factor authentication."
+          : "Add an extra layer of security to your account."}
+      </p>
+    </div>
+  </div>
 
-              <Button
-                variant={user.twoFactorEnabled ? "danger" : "warning"}
-                onClick={() =>
-                  router.push(
-                    user.twoFactorEnabled
-                      ? "/two-factor/disable"
-                      : "/two-factor/setup"
-                  )
-                }
-              >
-                {user.twoFactorEnabled
-                  ? "Disable 2FA"
-                  : "Enable 2FA"}
-              </Button>
-            </div>
+  <Button
+    variant={user.twoFactorEnabled ? "danger" : "warning"}
+    className={
+      !user.twoFactorEnabled && !user.hasPassword
+        ? "cursor-not-allowed opacity-50"
+        : ""
+    }
+    onClick={() => {
+      if (!user.twoFactorEnabled && !user.hasPassword) {
+        toast.error("Set your password first.");
+        return;
+      }
 
+      router.push(
+        user.twoFactorEnabled
+          ? "/two-factor/disable"
+          : "/two-factor/setup"
+      );
+    }}
+  >
+    {user.twoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
+  </Button>
+</div>
             {/* Backup Codes */}
             {user.twoFactorEnabled && (
               <>

@@ -45,7 +45,14 @@ export async function GET(request: NextRequest) {
         success: true,
         message: SUCCESS_MESSAGES.CURRENT_USER_DETAILS_FETCHED,
         code: SUCCESS_CODES.CURRENT_USER_DETAILS_FETCHED,
-        user: currentUser,
+        user: {
+  name: currentUser.name,
+  email: currentUser.email,
+  isVerified: currentUser.isVerified,
+  authProvider: currentUser.authProvider,
+  twoFactorEnabled: currentUser.twoFactorEnabled,
+  hasPassword: currentUser.password !== null,
+},
         backupCodesRemaining,
       },
       { status: 200 }

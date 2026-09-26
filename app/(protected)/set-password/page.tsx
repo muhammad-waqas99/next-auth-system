@@ -12,10 +12,11 @@ import { axiosInstance } from "@/app/lib/axios/axiosInstance";
 import Input from "@/app/components/ui/Input/Input";
 import FormField from "@/app/components/ui/FormField/FormField";
 import Button from "@/app/components/ui/Button/Button";
+import { useAuthStore } from "@/app/store/auth/authStore";
 
 export default function ChangePassword() {
   const router = useRouter();
-
+ const fetchUser = useAuthStore((state)=> state.fetchUser)
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSettingPassword, setIsSettingPassword] = useState(false);
 
@@ -59,7 +60,7 @@ export default function ChangePassword() {
       );
 
       toast.success(response.data.message);
-
+      await fetchUser()
       router.push("/profile");
     } catch (error: any) {
       console.log(

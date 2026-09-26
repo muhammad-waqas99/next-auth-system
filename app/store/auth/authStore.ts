@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 
 import { axiosInstance } from "@/app/lib/axios/axiosInstance";
@@ -8,6 +7,7 @@ type AuthMethod = "email" | "google";
 interface AuthUser {
   name: string;
   email: string;
+  hasPassword: boolean;
   isVerified: boolean;
   authMethods: AuthMethod[];
   twoFactorEnabled: boolean;
@@ -68,6 +68,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         user: {
           name: user.name,
           email: user.email,
+          hasPassword: user.hasPassword,
           isVerified: user.isVerified,
           authMethods,
           twoFactorEnabled: user.twoFactorEnabled,
@@ -81,4 +82,3 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
   },
 }));
-
