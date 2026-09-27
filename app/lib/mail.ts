@@ -1,5 +1,3 @@
-
-import { MailtrapTransport } from "mailtrap";
 import Nodemailer from "nodemailer";
 
 type EmailType = "verify" | "reset";
@@ -9,13 +7,14 @@ export default async function sendMail(
   token: string,
   emailType: EmailType
 ) {
-  const TOKEN = process.env.MAILTRAPTOKEN!;
+  const GMAIL_USER = process.env.GMAIL_USER!;
+  const GMAIL_APP_PASSWORD =
+    process.env.GMAIL_APP_PASSWORD!;
 
   let emailUrl = "";
   let subject = "";
   let text = "";
   let html = "";
-
 
   if (emailType === "verify") {
     emailUrl = `${process.env.DOMAIN}/verify-email?token=${token}`;
@@ -26,7 +25,7 @@ export default async function sendMail(
 
     html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-        
+
         <h2 style="color: #333;">Email Verification</h2>
 
         <p>Thank you for creating an account with us.</p>
@@ -54,7 +53,6 @@ export default async function sendMail(
     `;
   }
 
- 
   if (emailType === "reset") {
     emailUrl = `${process.env.DOMAIN}/reset-password?token=${token}`;
 
@@ -64,7 +62,7 @@ export default async function sendMail(
 
     html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-        
+
         <h2 style="color: #333;">Reset Your Password</h2>
 
         <p>
@@ -98,28 +96,22 @@ export default async function sendMail(
     `;
   }
 
-  const transport = Nodemailer.createTransport(
-    MailtrapTransport({
-      token: TOKEN,
-    })
-  );
-
-  const sender = {
-    address: "hello@demomailtrap.co",
-    name: "Mailtrap Test",
-  };
-
-  const recipients = [email];
+  const transport = Nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: GMAIL_USER,
+      pass: GMAIL_APP_PASSWORD,
+    },
+  });
 
   await transport.sendMail({
-    from: sender,
-    to: recipients,
+    from: {
+      address: GMAIL_USER,
+      name: "Next Auth System",
+    },
+    to: email,
     subject,
     text,
     html,
-    category: emailType === "verify"
-      ? "Email Verification"
-      : "Password Reset",
   });
 }
-
