@@ -3,12 +3,21 @@
 import axios from "axios";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 type VerificationStatus = "loading" | "success" | "error";
 
 export default function VerifyEmailSent() {
+  return (
+    <Suspense fallback={null}>
+      <VerifyEmailSentContent />
+    </Suspense>
+  );
+}
+
+function VerifyEmailSentContent() {
   const searchParams = useSearchParams();
+
 
   const [status, setStatus] =
     useState<VerificationStatus>("loading");

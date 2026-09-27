@@ -4,7 +4,7 @@
 import axios from "axios";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import toast from "react-hot-toast";
 
 import { resetPasswordSchema } from "../../lib/validationSchema/auth.schema";
@@ -21,7 +21,16 @@ type ResetStatus =
   | "error";
 
 export default function ResetPassword() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordContent />
+    </Suspense>
+  );
+}
+
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
+
 
   const plainToken = searchParams.get("token");
 

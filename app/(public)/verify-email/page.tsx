@@ -3,12 +3,21 @@
 import axios from "axios";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 type VerificationStatus = "loading" | "success" | "error";
 
 export default function VerifyEmail() {
+  return (
+    <Suspense fallback={null}>
+      <VerifyEmailContent />
+    </Suspense>
+  );
+}
+
+function VerifyEmailContent() {
+
   const searchParams = useSearchParams();
 
   const [status, setStatus] =

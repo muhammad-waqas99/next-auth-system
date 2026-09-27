@@ -1,7 +1,7 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import {  useSearchParams, useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
 import toast from "react-hot-toast";
 
 import Input from "@/app/components/ui/Input/Input";
@@ -14,6 +14,14 @@ import { backupLoginSchema } from "@/app/lib/validationSchema/auth.schema";
 import axios from "axios";
 
 export default function BackupLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <BackupLoginContent />
+    </Suspense>
+  );
+}
+
+function BackupLoginContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 

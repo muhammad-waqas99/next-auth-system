@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -15,6 +15,14 @@ import { validateForm } from "@/app/lib/validationSchema/validateForm";
 import axios from "axios";
 
 export default function TwoFactorLogin() {
+  return (
+    <Suspense fallback={null}>
+      <TwoFactorLoginContent />
+    </Suspense>
+  );
+}
+
+ function TwoFactorLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
