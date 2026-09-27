@@ -16,6 +16,7 @@ export default function VerifyEmail() {
   );
 }
 
+
 function VerifyEmailContent() {
 
   const searchParams = useSearchParams();
