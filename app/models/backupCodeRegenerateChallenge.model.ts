@@ -40,7 +40,7 @@ const RegenerateChallengeSchema = new Schema<IRegenerateChallenge>(
 const RegenerateChallenge: Model<IRegenerateChallenge> =
   mongoose.models.RegenerateChallenge ||
   mongoose.model<IRegenerateChallenge>(
-    "LoginChallenge",
+    "RegenerateChallenge",
     RegenerateChallengeSchema
   );
 
