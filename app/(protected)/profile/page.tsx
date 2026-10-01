@@ -505,13 +505,13 @@ const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
     {!isCurrent && (
       <span className="flex items-center gap-1.5">
         <Clock3 size={13} />
-        Active {getTimeAgo(session.createdAt)}
+        Active {getTimeAgo(session.lastUsedAt)}
       </span>
     )}
 
     <span>
       Created at{" "}
-      {new Date(session.createdAt).toLocaleString()}
+      {new Date(session.sessionCreatedAt).toLocaleString()}
     </span>
   </div>
 </div>

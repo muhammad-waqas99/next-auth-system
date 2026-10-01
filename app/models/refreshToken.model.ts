@@ -4,6 +4,7 @@ interface IRefreshToken{
     userId : mongoose.Schema.Types.ObjectId;
     tokenHash : string;
     expiresAt : Date;
+    sessionCreatedAt:Date;
     revokedAt : Date | null;
     sessionId: string;
     sessionExpiresAt : Date;
@@ -36,6 +37,10 @@ sessionExpiresAt:{
       type:Date,
     required:true
 },
+sessionCreatedAt:{
+    type:Date,
+    required:true
+},
 sessionId:{
     type:String,
     required:true
@@ -58,7 +63,7 @@ device:{
 },
 
 
-},{timestamps:true})
+})
 
 
 const RefreshToken = mongoose.model<IRefreshToken>("RefreshToken", refreshTokenSchema);

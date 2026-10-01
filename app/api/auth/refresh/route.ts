@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
     const newRotateRefreshToken = new RefreshToken({
       expiresAt: expiryDate,
       sessionExpiresAt: session.sessionExpiresAt,
+      sessionCreatedAt:session.sessionCreatedAt,
       userId: session.userId,
       tokenHash: newHashedRefreshToken,
       sessionId: session.sessionId,

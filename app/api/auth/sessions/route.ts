@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       userId,
       revokedAt: null,
     }).select(
-      "sessionId createdAt updatedAt lastUsedAt os browser device email"
+      "sessionId lastUsedAt os browser device email sessionCreatedAt"
     );
 
     return NextResponse.json(

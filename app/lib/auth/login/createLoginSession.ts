@@ -42,6 +42,8 @@ export async function createLoginSession({
     userId,
     expiresAt: expiryDate,
     sessionExpiresAt,
+    lastUsedAt:currentDate,
+    sessionCreatedAt:currentDate,
     tokenHash: hashedRefreshToken,
     sessionId,
     os,
