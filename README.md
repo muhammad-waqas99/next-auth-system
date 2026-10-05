@@ -1,11 +1,16 @@
 # Next Auth System
 
-## Badges
+
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?logo=mongodb)](https://www.mongodb.com/)
+[![Mongoose](https://img.shields.io/badge/Mongoose-ODM-880000?logo=mongoose)](https://mongoosejs.com/)
+[![Axios](https://img.shields.io/badge/Axios-HTTP_Client-5A29E4?logo=axios)](https://axios-http.com/)
+[![bcryptjs](https://img.shields.io/badge/bcryptjs-Password_Hashing-4B5563)](https://www.npmjs.com/package/bcryptjs)
+[![JWT](https://img.shields.io/badge/JWT-Authentication-black?logo=jsonwebtokens)](https://jwt.io/)
+
 ---
 
 A full-stack authentication system built with Next.js and TypeScript.
