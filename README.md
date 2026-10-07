@@ -104,7 +104,7 @@ The project keeps authentication logic, API routes, database models, reusable UI
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/muhammad-waqas99/next-auth-system.git
 cd next-auth-system
 ```
 
@@ -172,7 +172,6 @@ npm run start
 
 This project is for learning and development purposes.
 
-````
 
 
 
