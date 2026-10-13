@@ -15,7 +15,11 @@ export function proxy(request: NextRequest) {
 
   const accessToken = request.cookies.get("accessToken")?.value;
   const refreshToken = request.cookies.get("refreshToken")?.value;
-
+if (path === "/" && accessToken && refreshToken) {
+    return NextResponse.redirect(
+      new URL("/profile", request.nextUrl)
+    );
+  }
 
   if (isPublicPath && accessToken && refreshToken) {
     return NextResponse.redirect(
