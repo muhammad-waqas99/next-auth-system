@@ -162,11 +162,7 @@ To start the production server:
 npm run start
 ```
 
-## Notes
 
-* `.env.local` should never be committed to the repository.
-* Google OAuth redirect URIs must match the configured environment.
-* Gmail SMTP requires a Google App Password when using a Google account for sending emails.
 
 ## License
 
